@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { 
@@ -114,8 +115,10 @@ export default function ProjectDetailPage() {
       <Tabs defaultValue="overview" className="w-full">
         <TabsList className="bg-slate-100/50 p-1 rounded-2xl border border-slate-200/50 mb-6">
             <TabsTrigger value="overview" className="rounded-xl px-6 font-bold text-sm h-10 data-[state=active]:shadow-lg data-[state=active]:bg-white">Visão Geral</TabsTrigger>
-            <TabsTrigger value="timeline" className="rounded-xl px-6 font-bold text-sm h-10 data-[state=active]:shadow-lg data-[state=active]:bg-white flex gap-2">
+            <TabsTrigger value="timeline" asChild>
+              <Link href={`/integrator/projects/${id}/timeline`} className="rounded-xl px-6 font-bold text-sm h-10 data-[state=active]:shadow-lg data-[state=active]:bg-white flex gap-2 items-center">
                 <History className="w-4 h-4" /> Timeline
+              </Link>
             </TabsTrigger>
             <TabsTrigger value="finance" className="rounded-xl px-6 font-bold text-sm h-10 data-[state=active]:shadow-lg data-[state=active]:bg-white" disabled>Financeiro</TabsTrigger>
         </TabsList>

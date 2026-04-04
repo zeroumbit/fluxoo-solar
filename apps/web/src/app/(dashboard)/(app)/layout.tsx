@@ -13,6 +13,8 @@ import {
 } from '@/components/ui/breadcrumb'
 import { NotificationBell } from '@/components/notifications/notification-bell'
 import { OfflineIndicator } from '@/components/offline/offline-indicator'
+import { useDeviceType } from '@/hooks/use-device-type'
+import { BottomNavigation } from '@/components/mobile/bottom-navigation'
 
 export default async function DashboardLayout({
   children,
@@ -33,6 +35,28 @@ export default async function DashboardLayout({
     redirect('/select-company')
   }
 
+  const device = useDeviceType();
+
+  if (device === 'mobile') {
+    return (
+        <div className="flex flex-col h-screen bg-slate-50/50">
+          <header className="flex h-16 shrink-0 items-center justify-between border-b border-slate-200/60 px-6 bg-white/50 backdrop-blur-md sticky top-0 z-10 w-full mb-0">
+             <div className="flex items-center gap-2">
+                <span className="font-black text-lg tracking-tighter text-slate-900">FLUXOO</span>
+             </div>
+             <div className="flex items-center gap-3">
+                 <OfflineIndicator />
+                 <NotificationBell />
+             </div>
+          </header>
+          <main className="flex-1 overflow-y-auto pb-24 p-6 w-full max-w-full">
+            {children}
+          </main>
+          <BottomNavigation />
+        </div>
+    );
+  }
+
   return (
     <SidebarProvider>
       <AppSidebar 
@@ -42,7 +66,7 @@ export default async function DashboardLayout({
             avatar: user.user_metadata?.avatar_url
         }}
       />
-      <SidebarInset className="bg-slate-50/50">
+      <SidebarInset className="bg-slate-50/50 min-h-screen">
         <header className="flex h-16 shrink-0 items-center gap-2 border-b border-slate-200/60 px-4 bg-white/50 backdrop-blur-md sticky top-0 z-10">
           <div className="flex flex-1 items-center justify-between px-4">
             <div className="flex items-center gap-2">
@@ -70,7 +94,7 @@ export default async function DashboardLayout({
             </div>
           </div>
         </header>
-        <main className="flex flex-1 flex-col gap-4 p-4 lg:p-8 pt-4 overflow-y-auto max-w-[1600px]">
+        <main className="flex flex-1 flex-col gap-4 p-4 lg:p-8 pt-4 overflow-y-auto max-w-[1600px] w-full">
           {children}
         </main>
       </SidebarInset>
