@@ -98,6 +98,52 @@ export class ProjectsService {
   }
 
   // Métodos list (findAll) e findOne do checkpoint anterior devem ser mantidos/mesclados:
-  async findAll() { /* ... */ }
-  async findOne(id: string) { /* ... */ }
+  async findAll(status?: string, search?: string) {
+    const admin = this.supabase.getAdminClient();
+    let query = admin.from('projects').select('*');
+    
+    if (status) {
+      query = query.eq('status', status);
+    }
+    
+    if (search) {
+      query = query.ilike('name', `%${search}%`);
+    }
+    
+    const { data, error } = await query;
+    if (error) throw error;
+    return data;
+  }
+
+  async findOne(id: string) {
+    const admin = this.supabase.getAdminClient();
+    const { data, error } = await admin
+      .from('projects')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (error) throw error;
+    if (!data) throw new BadRequestException('Projeto não encontrado.');
+    return data;
+  }
+
+  async create(dto: any, activeTenantId: string, currentUserId: string) {
+    const admin = this.supabase.getAdminClient();
+    
+    const { data, error } = await admin
+      .from('projects')
+      .insert({
+        ...dto,
+        owner_tenant_id: activeTenantId,
+        created_by: currentUserId,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
+    
+    if (error) throw new BadRequestException(error.message);
+    return data;
+  }
 }

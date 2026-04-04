@@ -11,7 +11,7 @@ export class SyncService {
    */
   async processBatch(userId: string, tenantId: string, operations: any[]) {
     const admin = this.supabase.getAdminClient();
-    const results = [];
+    const results: Array<{ opId: any; success: boolean; res?: any; error?: string }> = [];
 
     // Processamento sequencial para garantir ordem cronológica da fila (Regra 5)
     for (const op of operations) {

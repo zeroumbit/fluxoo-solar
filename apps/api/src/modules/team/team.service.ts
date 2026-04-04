@@ -1,6 +1,6 @@
 import { Injectable, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
-import { crypto } from 'crypto';
+import { randomBytes } from 'crypto';
 
 @Injectable()
 export class TeamService {
