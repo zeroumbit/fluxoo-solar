@@ -7,6 +7,8 @@ import { OnboardingModule } from './modules/onboarding/onboarding.module';
 import { ProjectsModule } from './modules/projects/projects.module';
 import { ChecklistModule } from './modules/checklist/checklist.module';
 import { StorageModule } from './modules/storage/storage.module';
+import { MessagesModule } from './modules/messages/messages.module';
+import { CommentsModule } from './modules/comments/comments.module';
 
 @Module({
   imports: [
@@ -18,6 +20,8 @@ import { StorageModule } from './modules/storage/storage.module';
     ProjectsModule,
     ChecklistModule,
     StorageModule,
+    MessagesModule,
+    CommentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

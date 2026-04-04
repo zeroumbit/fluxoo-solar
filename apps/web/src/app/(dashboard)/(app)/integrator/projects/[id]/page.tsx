@@ -18,12 +18,22 @@ import {
   FileImage, 
   XCircle, 
   Upload,
-  Loader2
+  Loader2,
+  TrendingDown,
+  ChevronRight,
+  MessageSquare,
+  History,
+  Send,
+  ShieldCheck
 } from 'lucide-react';
 import { projectsApi } from '@/lib/api/projects';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { ProjectTimeline } from '@/components/timeline/project-timeline';
+import { ChecklistItemComments } from '@/components/checklist/checklist-item-comments';
+import { StatusTransitionButton } from '@/components/project/status-transition-button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function ProjectDetailPage() {
   const { id } = useParams();
@@ -88,124 +98,148 @@ export default function ProjectDetailPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => router.back()}>
-          <ChevronLeft className="w-5 h-5" />
-        </Button>
-        <div className="space-y-0.5">
-            <p className="text-[10px] uppercase font-black text-slate-400 tracking-widest">Projeto #{project.code}</p>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900 group">{project.client.name} — {project.title}</h1>
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={() => router.back()}>
+            <ChevronLeft className="w-5 h-5" />
+          </Button>
+          <div className="space-y-0.5">
+              <p className="text-[10px] uppercase font-black text-slate-400 tracking-widest">Projeto #{project.code}</p>
+              <h1 className="text-2xl font-bold tracking-tight text-slate-900 group">{project.client.name} — {project.title}</h1>
+          </div>
         </div>
+        <StatusTransitionButton currentStatus={project.status} projectId={project.id} />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3 items-start">
-        <div className="lg:col-span-2 space-y-6">
-          {/* Card Detalhes Operacionais */}
-          <Card className="border-slate-200 shadow-sm overflow-hidden border-none shadow-none ring-1 ring-slate-200">
-            <CardHeader className="bg-slate-50/50 pb-4">
-                <CardTitle className="text-sm font-bold uppercase tracking-wider text-slate-500">Fluxoo de Operação</CardTitle>
-            </CardHeader>
-            <CardContent className="p-6 grid grid-cols-2 md:grid-cols-3 gap-6">
-                <div className="space-y-1">
-                    <p className="text-xs text-slate-500 font-medium">Status Atual</p>
-                    <div className="flex items-center gap-1.5 font-bold text-primary">
-                        <TrendingUp className="w-4 h-4" /> {project.status}
-                    </div>
-                </div>
-                <div className="space-y-1">
-                    <p className="text-xs text-slate-500 font-medium">Valor Estimado</p>
-                    <div className="flex items-center gap-1.5 font-bold text-slate-800">
-                        <DollarSign className="w-4 h-4" /> R$ {(project.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    </div>
-                </div>
-                <div className="space-y-1">
-                    <p className="text-xs text-slate-500 font-medium">Entrega Prevista</p>
-                    <div className="flex items-center gap-1.5 font-bold text-amber-600">
-                        <Clock className="w-4 h-4" /> {format(new Date(project.expected_completion_date), "dd/MM/yyyy")}
-                    </div>
-                </div>
-            </CardContent>
-          </Card>
+      <Tabs defaultValue="overview" className="w-full">
+        <TabsList className="bg-slate-100/50 p-1 rounded-2xl border border-slate-200/50 mb-6">
+            <TabsTrigger value="overview" className="rounded-xl px-6 font-bold text-sm h-10 data-[state=active]:shadow-lg data-[state=active]:bg-white">Visão Geral</TabsTrigger>
+            <TabsTrigger value="timeline" className="rounded-xl px-6 font-bold text-sm h-10 data-[state=active]:shadow-lg data-[state=active]:bg-white flex gap-2">
+                <History className="w-4 h-4" /> Timeline
+            </TabsTrigger>
+            <TabsTrigger value="finance" className="rounded-xl px-6 font-bold text-sm h-10 data-[state=active]:shadow-lg data-[state=active]:bg-white" disabled>Financeiro</TabsTrigger>
+        </TabsList>
 
-          {/* Checklist Exclusivo 4 Itens */}
-          <Card className="border-slate-200 shadow-sm border-none ring-1 ring-slate-200">
-            <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                    <CardTitle className="text-lg font-bold">Checklist de Documentação</CardTitle>
-                    <CardDescription>Obtenha todos os arquivos para liberar a engenharia.</CardDescription>
-                </div>
-                <div className="px-3 py-1 bg-green-50 text-green-700 text-[10px] font-black rounded-full border border-green-200 uppercase tracking-tighter">
-                   1/4 Concluído
-                </div>
-            </CardHeader>
-            <CardContent className="p-0">
-                <div className="divide-y divide-slate-100">
-                {project.checklist_items.map((item: any) => (
-                    <div key={item.id} className="p-6 flex items-start justify-between group bg-white hover:bg-slate-50/50 transition-all">
-                        <div className="flex gap-4">
-                            <div className={`p-2.5 rounded-xl border ${getStatusColor(item.status)}`}>
-                                <FileImage className="w-5 h-5" />
-                            </div>
-                            <div className="space-y-1">
-                                <p className="font-bold text-slate-800 text-sm">{item.label}</p>
-                                <div className={`flex items-center gap-1 text-[10px] font-black uppercase tracking-widest ${getStatusColor(item.status)}`}>
-                                    {getStatusIcon(item.status)} {item.status}
+        <TabsContent value="overview" className="space-y-6">
+            <div className="grid gap-6 lg:grid-cols-3 items-start">
+              <div className="lg:col-span-2 space-y-6">
+                {/* Detalhes Operacionais */}
+                <Card className="border-none shadow-none ring-1 ring-slate-200 overflow-hidden rounded-3xl">
+                  <CardHeader className="bg-slate-50/50 border-b border-slate-100">
+                      <CardTitle className="text-xs font-black uppercase tracking-wider text-slate-500 flex items-center gap-2">
+                          <TrendingDown className="w-4 h-4 text-primary" /> Fluxoo de Operação
+                      </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-8 grid grid-cols-2 md:grid-cols-3 gap-8 bg-white">
+                      <div className="space-y-1.5">
+                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Status Atual</p>
+                          <div className="flex items-center gap-1.5 font-black text-primary text-xl uppercase tracking-tighter">
+                              {project.status}
+                          </div>
+                      </div>
+                      <div className="space-y-1.5">
+                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Valor do Contrato</p>
+                          <div className="flex items-center gap-1.5 font-bold text-slate-900 text-xl tracking-tight">
+                              R$ {(project.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </div>
+                      </div>
+                      <div className="space-y-1.5">
+                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Previsão de Conclusão</p>
+                          <div className="flex items-center gap-1.5 font-bold text-amber-600 text-xl tracking-tight">
+                               {format(new Date(project.expected_completion_date), "dd/MM/yyyy")}
+                          </div>
+                      </div>
+                  </CardContent>
+                </Card>
+
+                {/* Checklist com Chat do Item */}
+                <Card className="border-none shadow-none ring-1 ring-slate-200 rounded-3xl overflow-hidden">
+                  <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 bg-white">
+                      <div>
+                          <CardTitle className="text-lg font-black tracking-tight text-slate-800">Checklist Operacional</CardTitle>
+                          <CardDescription className="text-slate-400 font-medium">Arquivos e validações mandatórias.</CardDescription>
+                      </div>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                      <div className="divide-y divide-slate-100">
+                      {project.checklist_items.map((item: any) => (
+                          <div key={item.id} className="p-8 group bg-white hover:bg-slate-50/30 transition-all">
+                              <div className="flex items-start justify-between">
+                                <div className="flex gap-5">
+                                    <div className={`w-14 h-14 rounded-2xl border flex items-center justify-center transition-all ${getStatusColor(item.status)}`}>
+                                        <FileImage className="w-7 h-7" />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <p className="font-black text-slate-900 text-base tracking-tight">{item.label}</p>
+                                        <div className={`flex items-center gap-2 text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full border inline-flex ${getStatusColor(item.status)}`}>
+                                            {getStatusIcon(item.status)} {item.status}
+                                        </div>
+                                    </div>
                                 </div>
-                                {item.rejection_reason && (
-                                    <p className="text-xs text-destructive mt-2 bg-destructive/5 p-2 rounded-lg border border-destructive/10">
-                                        Motivo: {item.rejection_reason}
-                                    </p>
-                                )}
-                            </div>
-                        </div>
-                        <div className="flex gap-2">
-                           {item.file_url ? (
-                               <Button size="sm" variant="outline" onClick={() => window.open(item.file_url)}>Ver Arquivo</Button>
-                           ) : (
-                               <Button size="sm" className="gap-2 bg-primary/10 text-primary hover:bg-primary hover:text-white shadow-none transition-all">
-                                   <Upload className="w-4 h-4" /> Enviar
-                               </Button>
-                           )}
-                        </div>
-                    </div>
-                ))}
-                </div>
-            </CardContent>
-          </Card>
-        </div>
+                                <div className="flex gap-2">
+                                   {item.file_url ? (
+                                       <Button size="sm" variant="outline" className="rounded-xl" onClick={() => window.open(item.file_url)}>Ver Documento</Button>
+                                   ) : (
+                                       <Button size="sm" className="gap-2 bg-primary/10 text-primary hover:bg-primary hover:text-white shadow-xl shadow-primary/5 transition-all rounded-xl h-10 border border-primary/20">
+                                           <Upload className="w-4 h-4" /> Enviar Arquivo
+                                       </Button>
+                                   )}
+                                </div>
+                              </div>
+                              
+                              <ChecklistItemComments itemId={item.id} />
+                          </div>
+                      ))}
+                      </div>
+                  </CardContent>
+                </Card>
+              </div>
 
-        <div className="space-y-6">
-          {/* Card Cliente */}
-          <Card className="border-none ring-1 ring-slate-200 shadow-none">
-            <CardHeader className="pb-4">
-                <CardTitle className="text-lg font-bold flex items-center gap-2 font-display">
-                    <User className="w-5 h-5 text-primary" /> Perfil do Cliente
-                </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-5">
-                <div className="space-y-1">
-                    <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Nome Completo</p>
-                    <p className="text-sm font-bold text-slate-800">{project.client.name}</p>
-                </div>
-                <div className="space-y-1">
-                    <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Contatos</p>
-                    <div className="space-y-2 pt-1">
-                        <div className="flex items-center gap-2 text-xs text-slate-600 bg-slate-50 p-2 rounded-lg border border-slate-100">
-                            <Mail className="w-3.5 h-3.5 text-primary" /> {project.client.email}
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-slate-600 bg-slate-50 p-2 rounded-lg border border-slate-100">
-                            <Phone className="w-3.5 h-3.5 text-primary" /> {project.client.phone}
-                        </div>
-                    </div>
-                </div>
-                <div className="bg-slate-900 rounded-2xl p-4 text-white hover:scale-[1.02] transition-transform shadow-xl shadow-slate-200">
-                    <p className="text-[10px] uppercase font-black text-slate-400 tracking-tighter mb-2">Relacionamento Global</p>
-                    <p className="text-xs leading-relaxed opacity-80">Este cliente foi identificado via hash corporativo. Todas as alterações em dados mestres refletem em todos os seus projetos.</p>
-                </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+              <div className="space-y-6">
+                <Card className="border-none ring-1 ring-slate-200 shadow-none rounded-3xl p-4 bg-white">
+                  <CardHeader className="pb-4">
+                      <CardTitle className="text-lg font-black flex items-center gap-2">
+                          <User className="w-5 h-5 text-primary" /> Perfil do Cliente
+                      </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                      <div className="space-y-1.5 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                          <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Nome Completo</p>
+                          <p className="text-sm font-black text-slate-900">{project.client.name}</p>
+                      </div>
+                      <div className="space-y-4">
+                          <div className="flex items-center gap-3 text-xs text-slate-600 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+                              <Mail className="w-4 h-4 text-primary" /> {project.client.email}
+                          </div>
+                          <div className="flex items-center gap-3 text-xs text-slate-600 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+                              <Phone className="w-4 h-4 text-primary" /> {project.client.phone}
+                          </div>
+                      </div>
+                  </CardContent>
+                </Card>
+
+                {/* Delegação (Regra 7) */}
+                <Card className="border-none bg-primary/5 ring-1 ring-primary/20 shadow-none rounded-3xl p-2">
+                    <CardHeader className="p-6">
+                        <CardTitle className="text-sm font-black uppercase text-primary tracking-widest flex items-center gap-2">
+                            <ShieldCheck className="w-4 h-4" /> Engenharia Terceirizada
+                        </CardTitle>
+                        <CardDescription className="text-slate-500 font-medium pt-1">Delegue este projeto para uma empresa parceira realizar o design e homologação.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="px-6 pb-6 pt-0">
+                        <Button className="w-full h-11 bg-white border border-primary/20 text-primary hover:bg-primary hover:text-white font-bold rounded-2xl transition-all shadow-xl shadow-primary/5">
+                           Delegar Projeto
+                        </Button>
+                    </CardContent>
+                </Card>
+              </div>
+            </div>
+        </TabsContent>
+
+        <TabsContent value="timeline" className="max-w-3xl mx-auto pt-4">
+            <ProjectTimeline projectId={project.id} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
