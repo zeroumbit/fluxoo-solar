@@ -1,15 +1,25 @@
 'use client';
 
 import React, { useState } from 'react';
-import { CreditCard, Building2, Zap, Loader2, ArrowLeft } from 'lucide-react';
+import { CreditCard, Building2, Zap, Loader2, ArrowLeft, AlertCircle } from 'lucide-react';
 import { useOnboardingStore } from '@/store/use-onboarding-store';
 import { TextInput } from '../../components/auth-ui';
 import { onboardingApi } from '@/lib/api/onboarding';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 
 export function Step7Checkout() {
   const { formData, nextStep, prevStep } = useOnboardingStore();
   const [isLoading, setIsLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('credit_card');
+  const [errorDialogOpen, setErrorDialogOpen] = useState(false);
   const [cardData, setCardData] = useState({
     cardName: '',
     cardNumber: '',
@@ -26,7 +36,7 @@ export function Step7Checkout() {
       nextStep(); // Go to Step 8 Success
     } catch (err) {
       console.error("Checkout error", err);
-      alert("Erro ao finalizar cadastro. Tente novamente.");
+      setErrorDialogOpen(true);
     } finally {
       setIsLoading(false);
     }
@@ -105,5 +115,51 @@ export function Step7Checkout() {
         </div>
       </div>
     </form>
+
+    {/* Error Dialog */}
+    <Dialog open={errorDialogOpen} onOpenChange={setErrorDialogOpen}>
+      <DialogContent className="sm:max-w-[450px] border-none shadow-2xl">
+        <div className="flex flex-col items-center text-center py-8">
+          {/* Error Icon */}
+          <div className="w-20 h-20 bg-rose-100 rounded-full flex items-center justify-center mb-4 animate-in zoom-in duration-300">
+            <AlertCircle className="w-10 h-10 text-rose-600" />
+          </div>
+
+          {/* Title */}
+          <DialogTitle className="text-2xl font-bold text-slate-900 mb-2">
+            Erro ao Finalizar Cadastro
+          </DialogTitle>
+
+          {/* Description */}
+          <DialogDescription className="text-slate-500 text-base leading-relaxed mb-6">
+            Não foi possível concluir seu cadastro. Ocorreu um erro inesperado durante o processamento.
+          </DialogDescription>
+
+          {/* Info Box */}
+          <div className="w-full bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+            <div className="flex items-start gap-3">
+              <div className="p-1.5 bg-amber-100 rounded-lg shrink-0">
+                <svg className="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <p className="text-sm text-amber-700 text-left">
+                Por favor, verifique seus dados e tente novamente. Se o problema persistir, entre em contato com o suporte.
+              </p>
+            </div>
+          </div>
+
+          {/* Action Button */}
+          <DialogFooter className="w-full">
+            <Button
+              onClick={() => setErrorDialogOpen(false)}
+              className="w-full h-12 text-base font-semibold bg-gradient-to-br from-[#ffd700] to-[#705d00] hover:from-[#e6c200] hover:to-[#634f00] text-white shadow-lg"
+            >
+              Tentar Novamente
+            </Button>
+          </DialogFooter>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

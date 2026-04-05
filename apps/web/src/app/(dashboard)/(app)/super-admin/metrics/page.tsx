@@ -333,7 +333,7 @@ export default async function SuperAdminMetrics() {
                       </tr>
                     </thead>
                     <tbody className="divide-y">
-                      {overdueData.map((item, i) => {
+                      {overdueData.map((item: OverdueInvoice, i: number) => {
                         const daysOverdue = item.days_overdue || 0
                         return (
                           <tr key={i} className="hover:bg-slate-50">
