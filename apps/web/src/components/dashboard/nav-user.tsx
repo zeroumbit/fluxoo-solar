@@ -47,7 +47,7 @@ export function NavUser({
     <SidebarMenu>
       <SidebarMenuItem>
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+          <DropdownMenuTrigger render={
             <SidebarMenuButton
               size="lg"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
@@ -64,7 +64,7 @@ export function NavUser({
               </div>
               <ChevronsUpDown className="ml-auto size-4" />
             </SidebarMenuButton>
-          </DropdownMenuTrigger>
+          } />
           <DropdownMenuContent
             className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-xl border-slate-200 shadow-lg"
             side={isMobile ? 'bottom' : 'right'}
@@ -105,12 +105,12 @@ export function NavUser({
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <form action={signOut}>
-                <DropdownMenuItem asChild>
+                <DropdownMenuItem render={
                     <button type="submit" className="w-full flex items-center cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10">
                         <LogOut className="mr-2 h-4 w-4" />
                         Sair do sistema
                     </button>
-                </DropdownMenuItem>
+                } />
             </form>
           </DropdownMenuContent>
         </DropdownMenu>

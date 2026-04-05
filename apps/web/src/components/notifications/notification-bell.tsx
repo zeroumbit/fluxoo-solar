@@ -23,8 +23,10 @@ export function NotificationBell() {
         if (!user) return;
 
         // 1. Subscription Realtime (Com Filtro RLS - Regra 3)
+        // Ensure unique channel name for React Strict Mode to prevent .on() after .subscribe() crashes
+        const channelId = `notifications:${user.id}:${Date.now()}`;
         const channel = supabase
-          .channel(`notifications:${user.id}`)
+          .channel(channelId)
           .on(
             'postgres_changes',
             {
@@ -42,7 +44,9 @@ export function NotificationBell() {
           )
           .subscribe();
 
-        return () => { supabase.removeChannel(channel); };
+        return () => { 
+          supabase.removeChannel(channel); 
+        };
     };
 
     setupRealtime();

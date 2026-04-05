@@ -4,8 +4,9 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { SUPER_ADMIN } from '@/constants/super-admin'
+import type { User } from '@supabase/supabase-js'
 
-function isSuperAdmin(user: Awaited<ReturnType<ReturnType<typeof createClient>['auth']['getUser']>>['user']): boolean {
+function isSuperAdmin(user: User | null): boolean {
   if (!user) return false
   return (
     user.email === SUPER_ADMIN.EMAIL ||

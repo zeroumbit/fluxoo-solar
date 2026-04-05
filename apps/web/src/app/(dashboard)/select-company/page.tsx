@@ -7,8 +7,9 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { selectTenant } from './actions';
 import { SUPER_ADMIN } from '@/constants/super-admin';
+import type { User } from '@supabase/supabase-js';
 
-function isSuperAdmin(user: Awaited<ReturnType<ReturnType<typeof createClient>['auth']['getUser']>>['user']): boolean {
+function isSuperAdmin(user: User | null): boolean {
   if (!user) return false
   return (
     user.email === SUPER_ADMIN.EMAIL ||
