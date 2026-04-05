@@ -32,9 +32,22 @@ export const onboardingApi = {
    */
   async getCnpjData(cnpj: string) {
     const cleanCnpj = cnpj.replace(/\D/g, '');
-    const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cleanCnpj}`);
-    if (!response.ok) throw new Error('Não foi possível carregar os dados do CNPJ');
-    return await response.json();
+    try {
+      const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cleanCnpj}`);
+      
+      if (response.status === 404) {
+        return null;
+      }
+
+      if (!response.ok) {
+        throw new Error('Não foi possível carregar os dados do CNPJ');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error("BrasilAPI Fetch Error:", error);
+      return null;
+    }
   },
 
   /**

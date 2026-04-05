@@ -16,9 +16,11 @@ import {
   ToggleRight,
   MessageSquare,
   Activity,
-  ShieldCheck
+  ShieldCheck,
+  LogOut
 } from 'lucide-react'
 
+import { signOut } from '@/app/(auth)/login/actions'
 import { NavUser } from '@/components/dashboard/nav-user'
 import { TeamSwitcher } from '@/components/dashboard/team-switcher'
 import {
@@ -66,6 +68,14 @@ const navigation = {
     { title: 'Equipe', url: '/engineering/team', icon: Building2 },
     { title: 'Configurações', url: '/engineering/settings', icon: Settings },
   ],
+  reseller: [
+    { title: 'Home', url: '/reseller/dashboard', icon: LayoutDashboard },
+    { title: 'Meus Projetos', url: '/reseller/projects', icon: FileText },
+    { title: 'Comissões', url: '/reseller/commissions', icon: Zap },
+    { title: 'Indicar Cliente', url: '/reseller/refer', icon: Users },
+    { title: 'Links de Afiliado', url: '/reseller/links', icon: TrendingUp },
+    { title: 'Configurações', url: '/reseller/settings', icon: Settings },
+  ],
   superadmin: [
     { title: 'Dashboard', url: '/super-admin/dashboard', icon: LayoutDashboard },
     { title: 'Empresas', url: '/super-admin/tenants', icon: Building2 },
@@ -94,6 +104,7 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
   let currentRole = 'integrator';
   if (pathname.startsWith('/super-admin')) currentRole = 'superadmin';
   else if (pathname.startsWith('/engineering')) currentRole = 'engineering';
+  else if (pathname.startsWith('/reseller')) currentRole = 'reseller';
   
   const navItems = navigation[currentRole as keyof typeof navigation] || navigation.integrator
 
@@ -131,7 +142,21 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="p-4 border-t border-slate-100 bg-slate-50/20">
+      <SidebarFooter className="p-4 pt-0 border-t border-slate-100 bg-slate-50/20">
+        <SidebarMenu>
+          <SidebarMenuItem className="mb-2">
+              <form action={signOut}>
+                  <SidebarMenuButton 
+                      type="submit"
+                      className="h-11 w-full text-rose-600 hover:bg-rose-50 hover:text-rose-700 rounded-xl px-4 transition-all flex items-center gap-3 font-bold group"
+                      tooltip="Sair do Sistema"
+                  >
+                      <LogOut className="w-5 h-5 text-rose-500 group-hover:scale-110 transition-transform" />
+                      <span className="text-sm">Encerrar Sessão</span>
+                  </SidebarMenuButton>
+              </form>
+          </SidebarMenuItem>
+        </SidebarMenu>
         <NavUser user={user} />
       </SidebarFooter>
       <SidebarRail />

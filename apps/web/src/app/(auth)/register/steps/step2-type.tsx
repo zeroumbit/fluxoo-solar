@@ -24,21 +24,21 @@ export function Step2Type() {
             description="Instalo usinas solares" 
             icon={<Zap className="w-8 h-8" />} 
             isSelected={formData.tenantType === 'INTEGRATOR'} 
-            onClick={() => updateForm({ tenantType: 'INTEGRATOR' })} 
+            onClick={() => updateForm({ tenantType: 'INTEGRATOR', planId: null, selectedPlan: null })} 
           />
           <SelectableCard 
             title="Engenharia" 
             description="Faço projetos e ART" 
             icon={<Building2 className="w-8 h-8" />} 
             isSelected={formData.tenantType === 'ENGINEERING_FIRM'} 
-            onClick={() => updateForm({ tenantType: 'ENGINEERING_FIRM' })} 
+            onClick={() => updateForm({ tenantType: 'ENGINEERING_FIRM', planId: null, selectedPlan: null })} 
           />
           <SelectableCard 
             title="Revendedora" 
             description="Vendo para clientes" 
             icon={<Flame className="w-8 h-8" />} 
             isSelected={formData.tenantType === 'RESELLER'} 
-            onClick={() => updateForm({ tenantType: 'RESELLER' })} 
+            onClick={() => updateForm({ tenantType: 'RESELLER', planId: null, selectedPlan: null })} 
           />
         </div>
       </div>

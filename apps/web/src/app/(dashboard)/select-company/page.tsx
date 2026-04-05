@@ -6,6 +6,7 @@ import { Building2, ChevronRight, History, Home } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { selectTenant } from './actions';
+import { signOut } from '@/app/(auth)/login/actions';
 import { SUPER_ADMIN } from '@/constants/super-admin';
 import type { User } from '@supabase/supabase-js';
 
@@ -120,8 +121,8 @@ export default async function SelectCompanyPage() {
         </div>
 
         <div className="text-center pt-4">
-            <form action="/login/actions" method="POST">
-                <Button variant="link" className="text-slate-500 hover:text-primary transition-colors text-sm" formAction="/login/actions?action=signOut">
+            <form action={signOut}>
+                <Button type="submit" variant="link" className="text-slate-500 hover:text-primary transition-colors text-sm">
                     Sair e entrar com outra conta
                 </Button>
             </form>

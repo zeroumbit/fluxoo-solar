@@ -15,6 +15,7 @@ export async function selectTenant(tenantId: string, role: string, type: string)
     data: {
       active_tenant_id: tenantId,
       active_role: role,
+      active_tenant_type: type,
     }
   })
 

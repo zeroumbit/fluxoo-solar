@@ -15,16 +15,18 @@ export default async function DashboardLayout({
     redirect('/login')
   }
 
-  // Fetch active tenant from metadata or redirect to selection if not set
-  const activeTenantId = user.app_metadata?.active_tenant_id
+  // Fetch active tenant from metadata (can be in user_metadata or app_metadata)
+  const activeTenantId = user.user_metadata?.active_tenant_id || user.app_metadata?.active_tenant_id
+  const activeTenantType = user.user_metadata?.active_tenant_type || user.app_metadata?.active_tenant_type
   
   const isSuperAdmin = 
     user.email === SUPER_ADMIN.EMAIL || 
     user.id === SUPER_ADMIN.UID ||
-    user.app_metadata?.active_tenant_type === 'SUPER_ADMIN';
+    activeTenantType === 'SUPER_ADMIN';
 
-  if (!activeTenantId && !isSuperAdmin) {
-    redirect('/select-company')
+  // Check for unauthorized access 
+  if (!isSuperAdmin && !activeTenantId) {
+    redirect('/select-company');
   }
 
   // Delegate the entire rendering (including hooks like useDeviceType) to the Client Component

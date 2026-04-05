@@ -8,10 +8,14 @@ import {
   CreditCard, 
   Users, 
   Settings,
-  MessageSquare
+  MessageSquare,
+  LogOut,
+  Building2,
+  ShieldCheck
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTenantStore } from '@/store/use-tenant-store';
+import { signOut } from '@/app/(auth)/login/actions';
 
 export function BottomNavigation() {
   const pathname = usePathname();
@@ -43,6 +47,15 @@ export function BottomNavigation() {
           { label: 'Vendas', icon: Home, href: '/reseller/dashboard' },
           { label: 'Projetos', icon: Briefcase, href: '/reseller/projects' },
           { label: 'Comissões', icon: CreditCard, href: '/reseller/commissions' },
+        ];
+    }
+
+    if (type === 'SUPER_ADMIN') {
+        return [
+          { label: 'Home', icon: Home, href: '/super-admin/dashboard' },
+          { label: 'Empresas', icon: Building2, href: '/super-admin/tenants' },
+          { label: 'Planos', icon: CreditCard, href: '/super-admin/plans' },
+          { label: 'Auditoria', icon: ShieldCheck, href: '/super-admin/audit' },
         ];
     }
 
@@ -83,6 +96,13 @@ export function BottomNavigation() {
           </Link>
         );
       })}
+      
+      <form action={signOut} className="flex flex-col items-center gap-1 min-w-[64px] transition-all text-slate-400 opacity-60 hover:opacity-100">
+        <button type="submit" className="p-1 rounded-xl">
+           <LogOut className="w-5 h-5 stroke-2" />
+        </button>
+        <span className="text-[10px] font-black uppercase tracking-tighter">Sair</span>
+      </form>
     </nav>
   );
 }

@@ -33,9 +33,12 @@ export default function SuperAdminPlans() {
   const [planModalOpen, setPlanModalOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [successDialogOpen, setSuccessDialogOpen] = useState(false)
+  const [saveSuccessDialogOpen, setSaveSuccessDialogOpen] = useState(false)
   const [selectedPlan, setSelectedPlan] = useState<any>(null)
   const [planToDelete, setPlanToDelete] = useState<any>(null)
   const [deletedPlanName, setDeletedPlanName] = useState('')
+  const [savedPlanName, setSavedPlanName] = useState('')
+  const [isEditing, setIsEditing] = useState(false)
 
   // 1. Fetch real plans
   const { data: plans = [], isLoading } = useQuery({
@@ -46,12 +49,16 @@ export default function SuperAdminPlans() {
   // 2. Mutations
   const createOrUpdateMutation = useMutation({
     mutationFn: (data) => selectedPlan ? plansApi.update(selectedPlan.id, data) : plansApi.create(data),
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries(['super-admin-plans'])
       setPlanModalOpen(false)
-      toast({ title: 'Plano salvo com sucesso!' })
+      setSavedPlanName(variables.name || selectedPlan?.name || 'Plano')
+      setIsEditing(!!selectedPlan)
+      setSaveSuccessDialogOpen(true)
     },
-    onError: (err) => toast({ title: 'Erro ao salvar plano', description: err.message, variant: 'destructive' })
+    onError: (err) => {
+      toast({ title: 'Erro ao salvar plano', description: err.message, variant: 'destructive' })
+    }
   })
 
   const deleteMutation = useMutation({
@@ -68,6 +75,7 @@ export default function SuperAdminPlans() {
 
   const openPlanModal = (plan?: any) => {
     setSelectedPlan(plan || null)
+    setIsEditing(!!plan)
     setDeleteDialogOpen(false)
     setPlanModalOpen(true)
   }
@@ -308,7 +316,7 @@ export default function SuperAdminPlans() {
         </DialogContent>
       </Dialog>
 
-      {/* Success Dialog */}
+      {/* Success Dialog - Delete */}
       <Dialog open={successDialogOpen} onOpenChange={setSuccessDialogOpen}>
         <DialogContent className="sm:max-w-[425px] border-none shadow-2xl">
           <div className="flex flex-col items-center text-center py-8">
@@ -344,8 +352,56 @@ export default function SuperAdminPlans() {
             </div>
 
             {/* Action Button */}
-            <Button 
-              onClick={() => setSuccessDialogOpen(false)} 
+            <Button
+              onClick={() => setSuccessDialogOpen(false)}
+              className="w-full h-12 text-base font-semibold bg-slate-900 hover:bg-slate-800 text-white shadow-lg"
+            >
+              Entendi
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Success Dialog - Save (Create/Update) */}
+      <Dialog open={saveSuccessDialogOpen} onOpenChange={setSaveSuccessDialogOpen}>
+        <DialogContent className="sm:max-w-[425px] border-none shadow-2xl">
+          <div className="flex flex-col items-center text-center py-8">
+            {/* Success Icon */}
+            <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mb-4 animate-in zoom-in duration-300">
+              <svg className="w-10 h-10 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+
+            {/* Title */}
+            <DialogTitle className="text-2xl font-bold text-slate-900 mb-2">
+              {isEditing ? 'Plano Atualizado!' : 'Plano Criado!'}
+            </DialogTitle>
+
+            {/* Description */}
+            <DialogDescription className="text-slate-500 text-base leading-relaxed mb-6">
+              O plano <span className="font-semibold text-slate-900">{savedPlanName}</span> foi {isEditing ? 'atualizado' : 'criado'} com sucesso na plataforma.
+            </DialogDescription>
+
+            {/* Info Box */}
+            <div className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 mb-6">
+              <div className="flex items-start gap-3">
+                <div className="p-1.5 bg-sky-100 rounded-lg shrink-0">
+                  <svg className="w-4 h-4 text-sky-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <p className="text-sm text-slate-600 text-left">
+                  {isEditing
+                    ? 'As alterações serão refletidas para todos os usuários vinculados a este plano.'
+                    : 'Este plano já está disponível para ser selecionado durante o onboarding de novos inquilinos.'}
+                </p>
+              </div>
+            </div>
+
+            {/* Action Button */}
+            <Button
+              onClick={() => setSaveSuccessDialogOpen(false)}
               className="w-full h-12 text-base font-semibold bg-slate-900 hover:bg-slate-800 text-white shadow-lg"
             >
               Entendi
