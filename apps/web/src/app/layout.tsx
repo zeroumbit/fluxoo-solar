@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { ReactQueryProvider } from "@/lib/react-query";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -18,9 +19,11 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" className={`${inter.className} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-slate-50/50">
-        <TooltipProvider>
-          {children}
-        </TooltipProvider>
+        <ReactQueryProvider>
+          <TooltipProvider>
+            {children}
+          </TooltipProvider>
+        </ReactQueryProvider>
       </body>
     </html>
   );

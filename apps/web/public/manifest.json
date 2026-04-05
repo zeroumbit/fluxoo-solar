@@ -1,11 +1,12 @@
 {
   "name": "Fluxoo Solar",
   "short_name": "Fluxoo",
-  "description": "Plataforma SaaS para Energia Solar - Gestão e Operação",
+  "description": "Plataforma de Gestão Fotovoltaica",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#2563eb",
+  "background_color": "#f7f9fb",
+  "theme_color": "#705d00",
+  "orientation": "portrait-primary",
   "icons": [
     {
       "src": "/icons/icon-192x192.png",
