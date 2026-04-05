@@ -12,6 +12,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
+import { usePathname } from 'next/navigation'
 import { NotificationBell } from '@/components/notifications/notification-bell'
 import { OfflineIndicator } from '@/components/offline/offline-indicator'
 import { useDeviceType } from '@/hooks/use-device-type'
@@ -25,6 +26,7 @@ export function DashboardClientLayout({
   children: React.ReactNode 
 }) {
   const device = useDeviceType();
+  const pathname = usePathname();
 
   if (device === 'mobile') {
     return (
@@ -70,7 +72,16 @@ export function DashboardClientLayout({
                     </BreadcrumbItem>
                     <BreadcrumbSeparator className="hidden md:block" />
                     <BreadcrumbItem>
-                    <BreadcrumbPage>Dashboard</BreadcrumbPage>
+                    <BreadcrumbPage>
+                      {pathname.includes('/dashboard') ? 'Dashboard' : 
+                       pathname.includes('/projects') ? 'Projetos' :
+                       pathname.includes('/engineering') ? 'Engenharia' :
+                       pathname.includes('/resellers') ? 'Revendedores' :
+                       pathname.includes('/clients') ? 'Clientes' :
+                       pathname.includes('/finance') ? 'Financeiro' :
+                       pathname.includes('/team') ? 'Equipe' :
+                       pathname.includes('/settings') ? 'Configurações' : 'Início'}
+                    </BreadcrumbPage>
                     </BreadcrumbItem>
                 </BreadcrumbList>
                 </Breadcrumb>

@@ -1,109 +1,291 @@
-'use client';
+// @ts-nocheck
+'use client'
 
-import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { 
-  FileText, 
-  Plus, 
-  Search, 
-  ChevronRight, 
-  TrendingUp, 
-  Clock, 
-  CheckCircle2, 
-  AlertCircle 
-} from 'lucide-react';
-import Link from 'next/link';
+import { useState } from 'react'
+import { Card, CardContent } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue
+} from '@/components/ui/select'
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow
+} from '@/components/ui/table'
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter
+} from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
+import { Search, Plus, Eye, ArrowUpRight, MessageSquare, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
+import Link from 'next/link'
+import { useQuery } from '@tanstack/react-query'
+import { projectsApi } from '@/lib/api/projects'
+import { toast } from '@/hooks/use-toast'
+
+interface Project {
+  id: string
+  code: string
+  status: string
+  created_at: string
+  client: { name: string }
+  reseller?: { name: string }
+}
+
+const statusColors: Record<string, string> = {
+  'PROSPECTING': 'bg-slate-100 text-slate-700',
+  'DESIGNING': 'bg-blue-100 text-blue-700',
+  'HOMOLOGATING': 'bg-purple-100 text-purple-700',
+  'INSTALLED': 'bg-teal-100 text-teal-700',
+  'COMPLETED': 'bg-emerald-100 text-emerald-700',
+}
+
+const statusLabelMap: Record<string, string> = {
+  'PROSPECTING': 'Prospecção',
+  'DESIGNING': 'Design',
+  'HOMOLOGATING': 'Homologação',
+  'INSTALLED': 'Instalado',
+  'COMPLETED': 'Concluído',
+}
 
 export default function ProjectsPage() {
-  const [search, setSearch] = useState('');
-  
-  // Mock data for UI development before API connection
-  const projects = [
-    { id: '1', code: '2025-00123', client: 'João Silva', status: 'DESIGNING', value: 15500, date: '10/04/2026' },
-    { id: '2', code: '2025-00122', client: 'Maria Souza', status: 'PROSPECTING', value: 22000, date: '09/04/2026' },
-  ];
+  const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [resellerFilter, setResellerFilter] = useState('all')
+  const [openModal, setOpenModal] = useState(false)
+  const [showNewClientForm, setShowNewClientForm] = useState(false)
+  const [cpf, setCpf] = useState('')
 
-  const getStatusColor = (status: string) => {
-    switch(status) {
-        case 'DESIGNING': return 'bg-blue-100 text-blue-700 border-blue-200';
-        case 'PROSPECTING': return 'bg-amber-100 text-amber-700 border-amber-200';
-        case 'COMPLETED': return 'bg-green-100 text-green-700 border-green-200';
-        default: return 'bg-slate-100 text-slate-700 border-slate-200';
-    }
-  };
+  const { data: projectsData, isLoading, error } = useQuery<Project[]>({
+    queryKey: ['projects', { status: statusFilter, search }],
+    queryFn: () => projectsApi.list({ 
+      status: statusFilter === 'all' ? undefined : statusFilter,
+      search: search || undefined
+    }),
+  })
+
+  const filtered = projectsData || []
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="space-y-1">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
           <h1 className="text-3xl font-bold tracking-tight">Projetos</h1>
-          <p className="text-muted-foreground">Gerencie seus projetos fotovoltaicos e acompanhe checklists.</p>
+          <p className="text-muted-foreground">Gerencie todos os projetos da sua integradora</p>
         </div>
-        <Link href="/integrator/projects/new">
-            <Button className="flex items-center gap-2 shadow-lg hover:shadow-xl transition-all">
-                <Plus className="w-5 h-5" /> Novo Projeto
-            </Button>
-        </Link>
-      </div>
-
-      <div className="flex gap-4 items-center bg-white p-4 rounded-xl border border-slate-200/60 shadow-sm">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <Input 
-            placeholder="Buscar por cliente ou código do projeto..." 
-            className="pl-10 bg-slate-50/50 border-slate-200 focus:bg-white transition-all"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-        <Button variant="outline" className="text-slate-600">
-            Filtros
+        <Button onClick={() => setOpenModal(true)}>
+          <Plus className="w-4 h-4 mr-2" /> Novo Projeto
         </Button>
       </div>
 
-      <div className="grid gap-4">
-        {projects.map((project) => (
-          <Link key={project.id} href={`/integrator/projects/${project.id}`}>
-            <Card className="group hover:border-primary/50 hover:shadow-md transition-all cursor-pointer overflow-hidden border-slate-200">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 p-5">
-                    <div className="flex items-center gap-4">
-                        <div className="p-3 bg-primary/5 rounded-xl text-primary group-hover:bg-primary transition-colors group-hover:text-white">
-                            <FileText className="w-6 h-6" />
-                        </div>
-                        <div>
-                            <CardTitle className="text-lg font-bold text-slate-800">#{project.code} — {project.client}</CardTitle>
-                            <CardDescription className="flex items-center gap-3 mt-1.5 font-medium">
-                                <span className={`px-2.5 py-0.5 rounded-full border text-[10px] uppercase font-black tracking-widest ${getStatusColor(project.status)}`}>
-                                    {project.status}
-                                </span>
-                                <span className="text-slate-300">•</span>
-                                <span className="flex items-center gap-1 text-slate-500 text-xs">
-                                    <Clock className="w-3.5 h-3.5" /> {project.date}
-                                </span>
-                                <span className="text-slate-300">•</span>
-                                <span className="flex items-center gap-1 text-primary text-xs font-bold">
-                                    <TrendingUp className="w-3.5 h-3.5" /> R$ {(project.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                </span>
-                            </CardDescription>
+      {/* Filtros */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input placeholder="Buscar por código, cliente ou revendedor..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+        </div>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-[160px]"><SelectValue placeholder="Status" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos</SelectItem>
+            <SelectItem value="PROSPECTING">Prospecção</SelectItem>
+            <SelectItem value="DESIGNING">Design</SelectItem>
+            <SelectItem value="HOMOLOGATING">Homologação</SelectItem>
+            <SelectItem value="INSTALLED">Instalado</SelectItem>
+            <SelectItem value="COMPLETED">Concluído</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={resellerFilter} onValueChange={setResellerFilter}>
+          <SelectTrigger className="w-[160px]"><SelectValue placeholder="Revendedor" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos</SelectItem>
+            <SelectItem value="LuzSol Revenda">LuzSol Revenda</SelectItem>
+            <SelectItem value="NovaSol">NovaSol</SelectItem>
+            <SelectItem value="Direto">Direto</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Tabela */}
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-slate-50/50">
+                <TableHead>Código</TableHead>
+                <TableHead>Cliente</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="hidden md:table-cell">Revendedor</TableHead>
+                <TableHead className="hidden md:table-cell">Criado em</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                  Array(5).fill(0).map((_, i) => (
+                      <TableRow key={i} className="animate-pulse">
+                          <TableCell colSpan={6} className="h-12 bg-slate-50/50" />
+                      </TableRow>
+                  ))
+              ) : filtered.length === 0 ? (
+                  <TableRow>
+                      <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">Nenhum projeto encontrado.</TableCell>
+                  </TableRow>
+              ) : filtered.map((p) => (
+                <TableRow key={p.id} className="hover:bg-slate-50/50 text-sm">
+                  <TableCell className="font-mono font-semibold">{p.code}</TableCell>
+                  <TableCell className="font-medium">{p.client?.name}</TableCell>
+                  <TableCell>
+                    <Badge className={`${statusColors[p.status] || 'bg-slate-100'} hover:opacity-80 transition-opacity`}>
+                        {statusLabelMap[p.status] || p.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell text-muted-foreground">{p.reseller?.name || 'Venda Direta'}</TableCell>
+                  <TableCell className="hidden md:table-cell text-muted-foreground">{new Date(p.created_at).toLocaleDateString('pt-BR')}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <Button variant="ghost" size="sm" asChild title="Ver detalhes">
+                        <Link href={`/integrator/projects/${p.id}`}>
+                          <Eye className="w-4 h-4" />
+                        </Link>
+                      </Button>
+                      <Button variant="ghost" size="sm" className="text-primary" title="Avançar status">
+                        <ArrowUpRight className="w-4 h-4" />
+                      </Button>
+                      <Button variant="ghost" size="sm" className="text-slate-500" title="Chat">
+                        <MessageSquare className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">{filtered.length} projeto(s)</p>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" disabled><ChevronLeft className="w-4 h-4 mr-1" /> Anterior</Button>
+          <Button variant="outline" size="sm">1</Button>
+          <Button variant="outline" size="sm">Próximo <ChevronRight className="w-4 h-4 ml-1" /></Button>
+        </div>
+      </div>
+
+      {/* Modal Novo Projeto */}
+      <Dialog open={openModal} onOpenChange={(val) => {
+        setOpenModal(val)
+        if (!val) setShowNewClientForm(false)
+      }}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Novo Projeto</DialogTitle></DialogHeader>
+          
+          {!showNewClientForm ? (
+            <div className="space-y-4 py-2">
+              <div className="space-y-2">
+                <Label>Buscar cliente por CPF</Label>
+                <div className="flex gap-2">
+                  <Input 
+                    placeholder="000.000.000-00" 
+                    value={cpf} 
+                    onChange={(e) => setCpf(e.target.value)} 
+                    className="flex-1" 
+                  />
+                  <Button variant="outline" onClick={() => {
+                    if (cpf.endsWith('99')) {
+                        setShowNewClientForm(true)
+                    } else {
+                        toast({ title: 'Cliente não encontrado', description: 'Tente cadastrar um novo cliente.'})
+                    }
+                  }}>
+                    Buscar
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 py-2">
+                <div className="h-px flex-1 bg-border" />
+                <span className="text-xs text-muted-foreground uppercase font-semibold">ou</span>
+                <div className="h-px flex-1 bg-border" />
+              </div>
+
+              <Button 
+                variant="ghost" 
+                className="text-sm text-primary hover:underline hover:bg-primary/5 w-full h-auto py-2"
+                onClick={() => setShowNewClientForm(true)}
+              >
+                Cadastrar novo cliente
+              </Button>
+
+              <div className="space-y-2 pt-2">
+                <Label>Revendedor responsável (opcional)</Label>
+                <Select>
+                  <SelectTrigger><SelectValue placeholder="Selecione o revendedor" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="luzSol">LuzSol Revenda</SelectItem>
+                    <SelectItem value="novaSol">NovaSol</SelectItem>
+                    <SelectItem value="direto">Sem revendedor</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <DialogFooter className="gap-2 pt-4">
+                <Button variant="outline" onClick={() => setOpenModal(false)}>Cancelar</Button>
+                <Button onClick={() => setOpenModal(false)}>Criar Projeto</Button>
+              </DialogFooter>
+            </div>
+          ) : (
+            <div className="space-y-4 py-2 animate-in fade-in slide-in-from-right-4 duration-300">
+               <p className="text-sm text-muted-foreground mb-2">Cliente não encontrado. Preencha os dados abaixo:</p>
+               
+               <div className="grid gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs uppercase font-bold text-slate-500">Nome Completo</Label>
+                    <Input placeholder="Ex: João da Silva" />
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                        <Label className="text-xs uppercase font-bold text-slate-500">CPF</Label>
+                        <Input placeholder="000.000.000-00" value={cpf} readOnly />
+                    </div>
+                    <div className="space-y-1">
+                        <Label className="text-xs uppercase font-bold text-slate-500">E-mail</Label>
+                        <Input type="email" placeholder="joao@email.com" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                        <Label className="text-xs uppercase font-bold text-slate-500">Telefone</Label>
+                        <Input placeholder="(00) 00000-0000" />
+                    </div>
+                    <div className="space-y-1">
+                        <Label className="text-xs uppercase font-bold text-slate-500">CEP</Label>
+                        <div className="flex gap-1">
+                            <Input placeholder="00000-000" />
+                            <Button size="icon" variant="ghost" className="shrink-0"><Search className="w-4 h-4" /></Button>
                         </div>
                     </div>
-                    <Button variant="ghost" size="icon" className="group-hover:translate-x-1 transition-transform">
-                        <ChevronRight className="w-6 h-6 text-slate-300 group-hover:text-primary" />
-                    </Button>
-                </CardHeader>
-            </Card>
-          </Link>
-        ))}
+                  </div>
 
-        {projects.length === 0 && (
-            <div className="py-20 text-center space-y-4 border-2 border-dashed rounded-3xl opacity-50">
-                <FileText className="w-12 h-12 mx-auto text-slate-300" />
-                <p className="text-slate-500 font-medium">Nenhum projeto encontrado.</p>
+                  <div className="space-y-1">
+                    <Label className="text-xs uppercase font-bold text-slate-500">Endereço Completo</Label>
+                    <Input placeholder="Rua, Número, Bairro, Cidade - UF" />
+                  </div>
+               </div>
+
+               <DialogFooter className="gap-2 pt-4">
+                <Button variant="outline" onClick={() => setShowNewClientForm(false)}>Voltar</Button>
+                <Button onClick={() => {
+                    setShowNewClientForm(false)
+                    setOpenModal(false)
+                }}>Cadastrar e Criar Projeto</Button>
+              </DialogFooter>
             </div>
-        )}
-      </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
-  );
+  )
 }

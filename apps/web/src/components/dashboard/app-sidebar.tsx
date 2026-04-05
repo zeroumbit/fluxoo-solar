@@ -47,14 +47,23 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
 // Full navigation mapping based on role/tenant_type
 const navigation = {
   integrator: [
-    { title: 'Início', url: '/integrator/dashboard', icon: LayoutDashboard },
-    { title: 'Projetos', url: '/integrator/projetos', icon: FileText },
-    { title: 'Minha Equipe', url: '/integrator/equipe', icon: Users },
-    { title: 'Financeiro', url: '/integrator/financeiro', icon: Zap },
+    { title: 'Dashboard', url: '/integrator/dashboard', icon: LayoutDashboard },
+    { title: 'Projetos', url: '/integrator/projects', icon: FileText },
+    { title: 'Engenharia', url: '/integrator/engineering', icon: Briefcase },
+    { title: 'Revendedores', url: '/integrator/resellers', icon: Zap },
+    { title: 'Clientes', url: '/integrator/clients', icon: Users },
+    { title: 'Financeiro', url: '/integrator/finance', icon: CreditCard },
+    { title: 'Equipe', url: '/integrator/team', icon: Building2 },
     { title: 'Configurações', url: '/integrator/settings', icon: Settings },
   ],
   engineering: [
     { title: 'Dashboard', url: '/engineering/dashboard', icon: LayoutDashboard },
+    { title: 'Projetos Recebidos', url: '/engineering/received-projects', icon: Briefcase },
+    { title: 'Meus Clientes', url: '/engineering/my-clients', icon: Users },
+    { title: 'Vitrine', url: '/engineering/showcase', icon: Activity },
+    { title: 'Avaliações', url: '/engineering/reviews', icon: TrendingUp },
+    { title: 'Financeiro', url: '/engineering/financial', icon: Zap },
+    { title: 'Equipe', url: '/engineering/team', icon: Building2 },
     { title: 'Configurações', url: '/engineering/settings', icon: Settings },
   ],
   superadmin: [
