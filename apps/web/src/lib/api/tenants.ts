@@ -1,4 +1,24 @@
+import { createClient } from '@/lib/supabase/client';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+async function authFetch(url: string, options: RequestInit = {}) {
+  const supabase = createClient();
+  const { data: { session } } = await supabase.auth.getSession();
+  
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(session ? { 'Authorization': `Bearer ${session.access_token}` } : {}),
+    ...options.headers,
+  };
+
+  const response = await fetch(url, {
+    ...options,
+    headers,
+  });
+
+  return response;
+}
 
 export const tenantsApi = {
   /**
@@ -12,13 +32,13 @@ export const tenantsApi = {
         if (value) url.searchParams.append(key, value);
       });
     }
-    const response = await fetch(url.toString());
+    const response = await authFetch(url.toString());
     if (!response.ok) throw new Error('Erro ao listar empresas de engenharia');
     return await response.json();
   },
 
   async getById(id: string) {
-    const response = await fetch(`${API_URL}/tenants/${id}`);
+    const response = await authFetch(`${API_URL}/tenants/${id}`);
     if (!response.ok) throw new Error('Empresa não encontrada');
     return await response.json();
   }

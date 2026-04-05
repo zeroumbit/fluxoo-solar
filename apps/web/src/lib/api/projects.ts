@@ -1,4 +1,24 @@
+import { createClient } from '@/lib/supabase/client';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+async function authFetch(url: string, options: RequestInit = {}) {
+  const supabase = createClient();
+  const { data: { session } } = await supabase.auth.getSession();
+  
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(session ? { 'Authorization': `Bearer ${session.access_token}` } : {}),
+    ...options.headers,
+  };
+
+  const response = await fetch(url, {
+    ...options,
+    headers,
+  });
+
+  return response;
+}
 
 export const projectsApi = {
   /**
@@ -11,13 +31,13 @@ export const projectsApi = {
         if (value) url.searchParams.append(key, value);
       });
     }
-    const response = await fetch(url.toString());
+    const response = await authFetch(url.toString());
     if (!response.ok) throw new Error('Não foi possível carregar os projetos');
     return await response.json();
   },
 
   async getById(id: string) {
-    const response = await fetch(`${API_URL}/projects/${id}`);
+    const response = await authFetch(`${API_URL}/projects/${id}`);
     if (!response.ok) throw new Error('Projeto não encontrado');
     return await response.json();
   },
@@ -26,9 +46,8 @@ export const projectsApi = {
    * Criação transacional de projeto (Cliente + Projeto + 4 Itens Checklist).
    */
   async create(payload: any) {
-    const response = await fetch(`${API_URL}/projects`, {
+    const response = await authFetch(`${API_URL}/projects`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
     if (!response.ok) throw new Error('Erro ao criar projeto');
@@ -39,9 +58,8 @@ export const projectsApi = {
    * Upload de arquivo via Signed URL.
    */
   async getUploadUrl(projectId: string, itemId: string, fileName: string) {
-    const response = await fetch(`${API_URL}/projects/${projectId}/checklist/${itemId}/upload-url`, {
+    const response = await authFetch(`${API_URL}/projects/${projectId}/checklist/${itemId}/upload-url`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ fileName }),
     });
     if (!response.ok) throw new Error('Erro ao obter URL de upload');
@@ -49,9 +67,8 @@ export const projectsApi = {
   },
 
   async updateChecklistItemStatus(itemId: string, status: string, rejectionReason?: string) {
-    const response = await fetch(`${API_URL}/checklist/${itemId}/status`, {
+    const response = await authFetch(`${API_URL}/checklist/${itemId}/status`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status, rejectionReason }),
     });
     if (!response.ok) throw new Error('Erro ao atualizar status do checklist');
@@ -68,7 +85,7 @@ export const projectsApi = {
         if (value) url.searchParams.append(key, value);
       });
     }
-    const response = await fetch(url.toString());
+    const response = await authFetch(url.toString());
     if (!response.ok) throw new Error('Não foi possível carregar os projetos recebidos');
     return await response.json();
   },
@@ -77,7 +94,7 @@ export const projectsApi = {
    * Estatísticas do dashboard de engenharia.
    */
   async getStats() {
-    const response = await fetch(`${API_URL}/projects/stats`);
+    const response = await authFetch(`${API_URL}/projects/stats`);
     if (!response.ok) throw new Error('Não foi possível carregar as estatísticas');
     return await response.json();
   },
@@ -86,9 +103,8 @@ export const projectsApi = {
    * Delegar um projeto para uma empresa de engenharia.
    */
   async delegate(projectId: string, engineeringTenantId: string) {
-    const response = await fetch(`${API_URL}/projects/${projectId}/delegate`, {
+    const response = await authFetch(`${API_URL}/projects/${projectId}/delegate`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ delegatedTenantId: engineeringTenantId }),
     });
     if (!response.ok) {
