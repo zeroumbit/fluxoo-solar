@@ -1,10 +1,43 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
-  BarChart3, PieChart, TrendingDown, Users, HardDrive,
+  BarChart3, PieChart, TrendingDown, HardDrive,
   AlertTriangle, Download
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
+
+interface PlanRevenue {
+  plan_name: string
+  plan_slug: string
+  active_tenants: number
+  mrr_cents: number | string
+  total_revenue_cents: number | string
+}
+
+interface StorageUsage {
+  tenant_id: string
+  tenant_name: string
+  fantasy_name: string | null
+  tenant_type: string
+  total_storage_mb: number | string
+  plan_max_mb: number
+  usage_percent: number | string
+}
+
+interface OverdueInvoice {
+  tenant_name: string
+  fantasy_name: string | null
+  days_overdue: number
+  amount_cents: number
+  due_date: string
+  plan_name: string
+}
+
+interface TenantEvolution {
+  month: string
+  new_tenants: number
+  active_tenants: number
+}
 
 function formatCurrency(cents: number | string) {
   const value = typeof cents === 'string' ? parseFloat(cents) : cents
@@ -50,6 +83,12 @@ export default async function SuperAdminMetrics() {
     supabase.rpc('super_admin_tenant_evolution', { p_months: 6 }),
   ])
 
+  // Tipar dados
+  const plans = (revenueByPlan || []) as PlanRevenue[]
+  const storageData = (topStorageUsage || []) as StorageUsage[]
+  const overdueData = (overdueInvoices || []) as OverdueInvoice[]
+  const evolutionData = (tenantEvolution || []) as TenantEvolution[]
+
   // Métricas de plataforma
   const totalTenants = platformMetrics?.total_tenants ?? 0
   const totalTenantsActive = platformMetrics?.total_tenants_active ?? 0
@@ -64,13 +103,12 @@ export default async function SuperAdminMetrics() {
   const prevChurnRate = churnMetrics?.monthly_churn_rate ?? 0
 
   // Receita por plano
-  const plans = revenueByPlan || []
-  const totalMRR = plans.reduce((sum, plan) => sum + (parseFloat(plan.mrr_cents as any) || 0), 0)
+  const totalMRR = plans.reduce((sum: number, plan: PlanRevenue) => sum + (parseFloat(String(plan.mrr_cents)) || 0), 0)
   const avgTicket = totalTenantsActive > 0 ? totalMRR / totalTenantsActive : 0
 
   // Calcular distribuição por plano
-  const totalTenantsByPlan = plans.reduce((sum, plan) => sum + (plan.active_tenants || 0), 0)
-  const planDistribution = plans.map(plan => ({
+  const totalTenantsByPlan = plans.reduce((sum: number, plan: PlanRevenue) => sum + (plan.active_tenants || 0), 0)
+  const planDistribution = plans.map((plan: PlanRevenue) => ({
     ...plan,
     percentage: totalTenantsByPlan > 0
       ? Math.round(((plan.active_tenants || 0) / totalTenantsByPlan) * 100)
@@ -78,17 +116,13 @@ export default async function SuperAdminMetrics() {
   }))
 
   // Storage top usage
-  const storageData = topStorageUsage || []
-
   // Inadimplência
-  const overdueData = overdueInvoices || []
-  const totalOverdueCents = overdueData.reduce((sum, inv) => sum + (inv.amount_cents || 0), 0)
+  const totalOverdueCents = overdueData.reduce((sum: number, inv: OverdueInvoice) => sum + (inv.amount_cents || 0), 0)
   const totalOverdueInvoices = financeMetrics?.overdue_invoices ?? 0
   const pendingInvoices = financeMetrics?.pending_invoices ?? 0
 
   // Evolução de tenants (últimos 6 meses)
-  const evolutionData = tenantEvolution || []
-  const maxTenants = Math.max(...evolutionData.map(e => e.active_tenants || 0), 1)
+  const maxTenants = Math.max(...evolutionData.map((e: TenantEvolution) => e.active_tenants || 0), 1)
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -114,7 +148,7 @@ export default async function SuperAdminMetrics() {
           <CardContent className="flex-1">
             <div className="text-2xl font-bold text-slate-900">{formatNumber(totalTenantsActive)} Ativas</div>
             <div className="mt-4 h-[60px] flex items-end gap-1">
-              {evolutionData.map((item, i) => {
+              {evolutionData.map((item: TenantEvolution, i: number) => {
                 const activeCount = item.active_tenants || 0
                 const heightPercent = maxTenants > 0 ? (activeCount / maxTenants) * 100 : 0
                 return (
@@ -180,7 +214,7 @@ export default async function SuperAdminMetrics() {
             </p>
 
             <div className="space-y-3 mt-6">
-              {planDistribution.length > 0 ? planDistribution.map(plan => (
+              {planDistribution.length > 0 ? planDistribution.map((plan: PlanRevenue & { percentage: number }, i: number) => (
                 <div key={plan.plan_slug} className="space-y-1">
                   <div className="flex justify-between text-xs">
                     <span className="font-medium">
@@ -228,9 +262,9 @@ export default async function SuperAdminMetrics() {
                     </tr>
                   </thead>
                   <tbody className="divide-y">
-                    {storageData.map((item, i) => {
-                      const usagePercent = parseFloat(item.usage_percent as any) || 0
-                      const totalMB = parseFloat(item.total_storage_mb as any) || 0
+                    {storageData.map((item: StorageUsage, i: number) => {
+                      const usagePercent = parseFloat(String(item.usage_percent)) || 0
+                      const totalMB = parseFloat(String(item.total_storage_mb)) || 0
                       const maxMB = item.plan_max_mb || 0
                       return (
                         <tr key={i} className="hover:bg-slate-50">
