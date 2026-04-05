@@ -7,7 +7,8 @@ import {
   PopoverContent, 
   PopoverTrigger 
 } from '@/components/ui/popover';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -59,15 +60,13 @@ export function NotificationBell() {
 
   return (
     <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative group">
+      <PopoverTrigger className={cn(buttonVariants({ variant: 'ghost', size: 'icon' }), "relative group")}>
           <Bell className="w-5 h-5 text-slate-500 group-hover:text-primary transition-colors" />
           {unreadCount > 0 && (
             <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-destructive text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white animate-in zoom-in">
               {unreadCount}
             </span>
           )}
-        </Button>
       </PopoverTrigger>
       <PopoverContent className="w-80 p-0 rounded-2xl overflow-hidden shadow-2xl border-slate-100" align="end">
         <div className="p-4 border-b bg-slate-50/50 flex items-center justify-between">

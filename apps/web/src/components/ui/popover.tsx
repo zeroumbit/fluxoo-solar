@@ -9,15 +9,13 @@ function Popover({ ...props }: PopoverPrimitive.Root.Props) {
   return <PopoverPrimitive.Root data-slot="popover" {...props} />
 }
 
-function PopoverTrigger({ className, children, ...props }: PopoverPrimitive.Trigger.Props & { className?: string }) {
+function PopoverTrigger({ className, ...props }: PopoverPrimitive.Trigger.Props) {
   return (
     <PopoverPrimitive.Trigger
       data-slot="popover-trigger"
-      className={className}
+      className={cn(className)}
       {...props}
-    >
-      {children}
-    </PopoverPrimitive.Trigger>
+    />
   )
 }
 

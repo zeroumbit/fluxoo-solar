@@ -21,7 +21,7 @@ import {
   DialogTitle, 
   DialogTrigger 
 } from '@/components/ui/dialog';
-import { toast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 interface StatusTransitionButtonProps {
     currentStatus: string;
@@ -29,6 +29,7 @@ interface StatusTransitionButtonProps {
 }
 
 export function StatusTransitionButton({ currentStatus, projectId }: StatusTransitionButtonProps) {
+  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -60,11 +61,11 @@ export function StatusTransitionButton({ currentStatus, projectId }: StatusTrans
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-        <DialogTrigger asChild>
+        <DialogTrigger render={
             <Button className="h-10 px-6 gap-2 bg-slate-900 hover:bg-slate-800 text-white shadow-xl shadow-slate-200/50 rounded-xl transition-all hover:scale-[1.03]">
                 Avançar para {transition.nextLabel} <ChevronRight className="w-4 h-4" />
             </Button>
-        </DialogTrigger>
+        } />
         <DialogContent className="max-w-[400px] border-none shadow-2xl rounded-3xl p-8">
             <DialogHeader className="text-center space-y-4">
                 <div className="mx-auto w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center border border-blue-100 mb-2">

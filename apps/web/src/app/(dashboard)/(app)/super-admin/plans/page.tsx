@@ -31,7 +31,11 @@ export default function SuperAdminPlans() {
   const { toast } = useToast()
   const queryClient = useQueryClient()
   const [planModalOpen, setPlanModalOpen] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [successDialogOpen, setSuccessDialogOpen] = useState(false)
   const [selectedPlan, setSelectedPlan] = useState<any>(null)
+  const [planToDelete, setPlanToDelete] = useState<any>(null)
+  const [deletedPlanName, setDeletedPlanName] = useState('')
 
   // 1. Fetch real plans
   const { data: plans = [], isLoading } = useQuery({
@@ -54,15 +58,32 @@ export default function SuperAdminPlans() {
     mutationFn: (id) => plansApi.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries(['super-admin-plans'])
-      setPlanModalOpen(false)
-      toast({ title: 'Plano excluído.' })
+      setDeleteDialogOpen(false)
+      setDeletedPlanName(planToDelete?.name || 'Plano')
+      setSuccessDialogOpen(true)
+      setPlanToDelete(null)
     },
     onError: (err) => toast({ title: 'Erro ao excluir', description: err.message, variant: 'destructive' })
   })
 
   const openPlanModal = (plan?: any) => {
     setSelectedPlan(plan || null)
+    setDeleteDialogOpen(false)
     setPlanModalOpen(true)
+  }
+
+  const openDeleteDialog = (plan: any) => {
+    setPlanToDelete(plan)
+    setPlanModalOpen(false)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDelete = () => {
+    if (planToDelete) {
+      deleteMutation.mutate(planToDelete.id)
+      setDeleteDialogOpen(false)
+      setPlanToDelete(null)
+    }
   }
 
   const handleSave = (e) => {
@@ -223,15 +244,11 @@ export default function SuperAdminPlans() {
 
             <DialogFooter className="flex items-center justify-between sm:justify-between border-t pt-4">
               {selectedPlan ? (
-                <Button 
+                <Button
                   type="button"
-                  variant="ghost" 
+                  variant="ghost"
                   className="text-rose-600 hover:text-rose-700 hover:bg-rose-50"
-                  onClick={() => {
-                    if (confirm('Deseja excluir este plano definitivamente?')) {
-                      deleteMutation.mutate(selectedPlan.id)
-                    }
-                  }}
+                  onClick={() => openDeleteDialog(selectedPlan)}
                   disabled={deleteMutation.isLoading}
                 >
                   <Trash className="w-4 h-4 mr-2" /> Excluir
@@ -246,6 +263,94 @@ export default function SuperAdminPlans() {
               </div>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Trash className="w-5 h-5 text-rose-600" /> Confirmar Exclusão
+            </DialogTitle>
+            <DialogDescription>
+              Tem certeza que deseja excluir o plano <span className="font-semibold text-slate-900">{planToDelete?.name}</span>?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <div className="bg-rose-50 border border-rose-200 rounded-lg p-3">
+              <p className="text-sm text-rose-700">
+                ⚠️ Esta ação não pode ser desfeita. Todos os dados associados a este plano serão removidos permanentemente.
+              </p>
+            </div>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setDeleteDialogOpen(false)
+                setPlanToDelete(null)
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={deleteMutation.isLoading}
+            >
+              {deleteMutation.isLoading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+              Sim, Excluir Plano
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Success Dialog */}
+      <Dialog open={successDialogOpen} onOpenChange={setSuccessDialogOpen}>
+        <DialogContent className="sm:max-w-[425px] border-none shadow-2xl">
+          <div className="flex flex-col items-center text-center py-8">
+            {/* Success Icon */}
+            <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mb-4 animate-in zoom-in duration-300">
+              <svg className="w-10 h-10 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+
+            {/* Title */}
+            <DialogTitle className="text-2xl font-bold text-slate-900 mb-2">
+              Plano Excluído com Sucesso!
+            </DialogTitle>
+
+            {/* Description */}
+            <DialogDescription className="text-slate-500 text-base leading-relaxed mb-6">
+              O plano <span className="font-semibold text-slate-900">{deletedPlanName}</span> foi removido permanentemente da plataforma.
+            </DialogDescription>
+
+            {/* Info Box */}
+            <div className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 mb-6">
+              <div className="flex items-start gap-3">
+                <div className="p-1.5 bg-amber-100 rounded-lg shrink-0">
+                  <svg className="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <p className="text-sm text-slate-600 text-left">
+                  Esta ação não pode ser desfeita. Os usuários associados a este plano deverão ser realocados.
+                </p>
+              </div>
+            </div>
+
+            {/* Action Button */}
+            <Button 
+              onClick={() => setSuccessDialogOpen(false)} 
+              className="w-full h-12 text-base font-semibold bg-slate-900 hover:bg-slate-800 text-white shadow-lg"
+            >
+              Entendi
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
