@@ -112,7 +112,7 @@ export class OnboardingService {
       // Rollback manual (apagar do auth users) se algo no banco falhar
       await admin.auth.admin.deleteUser(userId);
       
-      throw new InternalServerErrorException('Erro durante a persistência dos dados da empresa.');
+      throw new InternalServerErrorException(`Erro no banco: ${JSON.stringify(dbError)}`);
     }
   }
 }

@@ -13,7 +13,7 @@ export function Step8Success() {
       <h1 className="text-4xl font-['Manrope'] font-bold text-[#191c1e] mb-4">Setup Concluído!</h1>
       <p className="text-[#545f73] mb-8 text-lg">A sua conta foi criada com sucesso. Bem-vindo ao Fluxoo Solar.</p>
       <Link href="/login" onClick={() => reset()} className="px-10 py-4 rounded-full bg-[#191c1e] text-white font-bold tracking-widest uppercase text-sm hover:bg-[#2d3133] transition-all inline-block">
-        Aceder ao Portal
+        Entre agora
       </Link>
     </div>
   );

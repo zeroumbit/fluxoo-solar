@@ -31,8 +31,18 @@ export function Step7Checkout() {
     e.preventDefault();
     setIsLoading(true);
     try {
-      // In a real app, we would send payment info too
-      await onboardingApi.register({ ...formData, paymentMethod, cardData });
+      // Send only exactly what the backend DTO expects
+      const apiData = {
+          email: formData.email,
+          password: formData.password,
+          tenantType: formData.tenantType,
+          company: formData.company,
+          address: formData.address,
+          responsible: formData.responsible,
+          planId: formData.planId
+      };
+      
+      await onboardingApi.register(apiData);
       nextStep(); // Go to Step 8 Success
     } catch (err) {
       console.error("Checkout error", err);
@@ -44,6 +54,7 @@ export function Step7Checkout() {
 
 
   return (
+    <>
     <form onSubmit={handleFinish} className="animate-in fade-in grid grid-cols-1 lg:grid-cols-12 gap-12">
       <div className="lg:col-span-7 space-y-10">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -161,5 +172,6 @@ export function Step7Checkout() {
         </div>
       </DialogContent>
     </Dialog>
+    </>
   );
 }

@@ -44,22 +44,22 @@ CREATE TABLE IF NOT EXISTS public.plans (
 );
 
 -- Índice para busca rápida por slug
-CREATE INDEX IF NOT EXISTS idx_plans_slug ON public.plans(slug);
-CREATE INDEX IF NOT EXISTS idx_plans_active ON public.plans(is_active) WHERE is_active = true;
-CREATE INDEX IF NOT EXISTS idx_plans_target ON public.plans(target_type) WHERE target_type IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_subscription_plans_slug ON public.subscription_plans(slug);
+CREATE INDEX IF NOT EXISTS idx_subscription_plans_active ON public.subscription_plans(is_active) WHERE is_active = true;
+CREATE INDEX IF NOT EXISTS idx_subscription_plans_target ON public.subscription_plans(target_type) WHERE target_type IS NOT NULL;
 
--- RLS na tabela plans
-ALTER TABLE public.plans ENABLE ROW LEVEL SECURITY;
+-- RLS na tabela subscription_plans
+ALTER TABLE public.subscription_plans ENABLE ROW LEVEL SECURITY;
 
 -- Política: Plans são leitura pública (qualquer usuário autenticado pode ver planos ativos)
-CREATE POLICY "plans_select_active"
-ON public.plans
+CREATE POLICY "subscription_plans_select_active"
+ON public.subscription_plans
 FOR SELECT
 USING (is_active = true OR auth.role() = 'service_role');
 
 -- Política: Apenas service_role pode INSERT/UPDATE/DELETE (via API com service key)
-CREATE POLICY "plans_service_role_all"
-ON public.plans
+CREATE POLICY "subscription_plans_service_role_all"
+ON public.subscription_plans
 FOR ALL
 USING (auth.role() = 'service_role')
 WITH CHECK (auth.role() = 'service_role');
@@ -73,8 +73,8 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER update_plans_updated_at
-    BEFORE UPDATE ON public.plans
+CREATE TRIGGER update_subscription_plans_updated_at
+    BEFORE UPDATE ON public.subscription_plans
     FOR EACH ROW
     EXECUTE FUNCTION public.update_updated_at_column();
 
@@ -84,7 +84,7 @@ CREATE TRIGGER update_plans_updated_at
 CREATE TABLE IF NOT EXISTS public.invoices (
     id                  uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id           uuid NOT NULL REFERENCES public.tenants(id) ON DELETE RESTRICT,
-    plan_id             uuid NOT NULL REFERENCES public.plans(id) ON DELETE RESTRICT,
+    plan_id             uuid NOT NULL REFERENCES public.subscription_plans(id) ON DELETE RESTRICT,
     billing_period_start date NOT NULL,                 -- Início do período cobrado
     billing_period_end   date NOT NULL,                 -- Fim do período cobrado
     
@@ -252,7 +252,7 @@ GRANT EXECUTE ON FUNCTION public.super_admin_revenue_by_plan() TO service_role;
 -- ============================================================================
 -- 4. SEED: Planos iniciais
 -- ============================================================================
-INSERT INTO public.plans (name, slug, description, price_cents, max_users, max_projects, max_storage_mb, target_type, features, sort_order, is_featured)
+INSERT INTO public.subscription_plans (name, slug, description, price_cents, max_users, max_projects, max_storage_mb, target_type, features, sort_order, is_featured)
 VALUES
     ('Starter', 'starter', 'Ideal para integradores iniciando no Fluxoo Solar.', 9900, 3, 5, 1000, 'INTEGRATOR', 
      '["Projeto ilimitado", "3 usuários", "1GB Storage", "Suporte por email"]'::jsonb, 1, true),

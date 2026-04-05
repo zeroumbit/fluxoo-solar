@@ -73,7 +73,8 @@ BEGIN
                 to_tsvector('simple', t2.name || ' ' || COALESCE(t2.fantasy_name, '') || ' ' || COALESCE(t2.cnpj, ''))
                 @@ plainto_tsquery('simple', p_search)))::bigint as total_count
     FROM public.tenants t
-    LEFT JOIN public.plans p ON p.id = t.plan_id
+    LEFT JOIN public.subscription_plans p ON p.id = t.plan_id
+
     WHERE t.type != 'SUPER_ADMIN'
       AND (p_search IS NULL OR
            to_tsvector('simple', t.name || ' ' || COALESCE(t.fantasy_name, '') || ' ' || COALESCE(t.cnpj, ''))
@@ -131,7 +132,8 @@ BEGIN
         COALESCE(user_stats.active_users, 0)::bigint as active_users,
         COALESCE(storage_stats.total_storage_mb, 0)::numeric as total_storage_mb
     FROM public.tenants t
-    LEFT JOIN public.plans p ON p.id = t.plan_id
+    LEFT JOIN public.subscription_plans p ON p.id = t.plan_id
+
     LEFT JOIN (
         SELECT
             owner_tenant_id,
@@ -434,7 +436,8 @@ BEGIN
             ELSE 0
         END as usage_percent
     FROM public.tenants t
-    LEFT JOIN public.plans p ON p.id = t.plan_id
+    LEFT JOIN public.subscription_plans p ON p.id = t.plan_id
+
     LEFT JOIN (
         SELECT
             owner_tenant_id,
@@ -475,7 +478,7 @@ BEGIN
         p.name as plan_name
     FROM public.invoices i
     JOIN public.tenants t ON t.id = i.tenant_id
-    JOIN public.plans p ON p.id = i.plan_id
+    JOIN public.subscription_plans p ON p.id = i.plan_id
     WHERE i.status IN ('OVERDUE', 'PENDING')
       AND i.due_date < NOW()
       AND t.type != 'SUPER_ADMIN'
