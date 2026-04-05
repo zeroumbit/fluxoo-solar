@@ -77,6 +77,16 @@ export class OnboardingService {
 
       if (memError) throw memError;
 
+      // 4.1 Update User Metadata with the newly created tenant for immediate access
+      await admin.auth.admin.updateUserById(userId, {
+        user_metadata: {
+          name: dto.responsible.name,
+          active_tenant_id: tenant.id,
+          active_tenant_type: dto.tenantType,
+          active_role: 'OWNER'
+        }
+      });
+
       // 5. Address
       const { error: addrError } = await admin
         .from('tenant_addresses')

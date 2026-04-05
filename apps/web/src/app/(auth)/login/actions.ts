@@ -32,9 +32,58 @@ export async function login(formData: FormData) {
 
   revalidatePath('/', 'layout')
 
-  // Super Admin vai direto para /super-admin, nunca para /select-company
+  // 1. Super Admin vai direto para /super-admin, nunca para /select-company
   if (isSuperAdmin(data.user)) {
     redirect('/super-admin/dashboard')
+  }
+
+  // 2. Se já tem tenant ativo nos metadados (vêm do Onboarding ou escolha anterior), vai direto
+  const metadata = data.user!.user_metadata;
+  const activeTenantId = metadata?.active_tenant_id
+  const activeTenantType = metadata?.active_tenant_type
+
+  if (activeTenantId && activeTenantType) {
+    const routeMap: Record<string, string> = {
+      'INTEGRATOR': '/integrator/dashboard',
+      'ENGINEERING_FIRM': '/engineering/dashboard',
+      'RESELLER': '/reseller/dashboard'
+    };
+    if (routeMap[activeTenantType]) {
+      redirect(routeMap[activeTenantType]);
+    }
+  }
+
+  // 3. Lógica de Redirecionamento Inteligente (Auto-select se tiver apenas 1 empresa)
+  const { data: memberships } = await supabase
+    .from('tenant_user_memberships')
+    .select('tenant_id, role, tenants(type)')
+    .eq('user_id', data.user!.id)
+    .eq('is_active', true);
+
+  const typedMemberships = memberships as any[];
+
+  if (typedMemberships?.length === 1) {
+    const m = typedMemberships[0];
+    const type = m.tenants.type;
+    
+    // Atualizar os metadados da sessão para persistir a escolha
+    await supabase.auth.updateUser({
+      data: {
+        active_tenant_id: m.tenant_id,
+        active_role: m.role,
+        active_tenant_type: type
+      }
+    });
+
+    const routeMap: Record<string, string> = {
+      'INTEGRATOR': '/integrator/dashboard',
+      'ENGINEERING_FIRM': '/engineering/dashboard',
+      'RESELLER': '/reseller/dashboard'
+    };
+
+    if (routeMap[type]) {
+      redirect(routeMap[type]);
+    }
   }
 
   redirect('/select-company')
