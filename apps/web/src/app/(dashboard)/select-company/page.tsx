@@ -43,10 +43,30 @@ export default async function SelectCompanyPage() {
         created_at
       )
     `)
+    .eq('user_id', user.id)
     .eq('is_active', true);
 
   if (error || !memberships || memberships.length === 0) {
-    redirect('/login?error=Nenhuma organização vinculada a este perfil.');
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <div className="w-full max-w-lg space-y-6 bg-white p-8 rounded-xl shadow-sm border border-slate-200 text-center">
+            <div className="bg-red-50 text-red-500 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                <Building2 className="w-8 h-8" />
+            </div>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Nenhuma organização encontrada</h1>
+          <p className="text-muted-foreground text-sm">
+            Sua conta não possui vínculo com nenhuma empresa cadastrada no Fluxoo Solar. Entre em contato com o suporte ou solicite acesso a um administrador.
+          </p>
+          <div className="pt-6">
+            <form action={signOut}>
+                <Button type="submit" className="w-full">
+                    Sair e tentar com outra conta
+                </Button>
+            </form>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   /**

@@ -47,18 +47,27 @@ export async function updateSession(request: NextRequest) {
 
   // 3. Redirection Logic (Fase 2)
 
+  // Helper para redirecionar mas preservar cookies (ex: auth tokens renovados ou tenant metadata)
+  const redirectWithCookies = (url: URL | string) => {
+    const response = NextResponse.redirect(url)
+    supabaseResponse.cookies.getAll().forEach((cookie) => {
+      response.cookies.set(cookie.name, cookie.value)
+    })
+    return response
+  }
+
   // Deslogado -> Login
   if (!user && !isAuthRoute && path !== '/') {
-    return NextResponse.redirect(new URL('/login', request.url))
+    return redirectWithCookies(new URL('/login', request.url))
   }
 
   // Logado acessando rota de auth -> Select Company ou Dashboard
   if (user && isAuthRoute) {
     // Super Admin sempre vai para /super-admin/dashboard, nunca para /select-company
     if (isSuperAdmin(user)) {
-      return NextResponse.redirect(new URL('/super-admin/dashboard', request.url))
+      return redirectWithCookies(new URL('/super-admin/dashboard', request.url))
     }
-    return NextResponse.redirect(new URL('/select-company', request.url))
+    return redirectWithCookies(new URL('/select-company', request.url))
   }
 
   // 4. RBAC Check (Fase 2 - Regra 5)
@@ -85,7 +94,7 @@ export async function updateSession(request: NextRequest) {
             const type = m.tenants.type
 
             // Se o que estamos tentando selecionar for DIFERENTE do que já está ativo (ou se não tem nada ativo)
-            if (m.tenant_id !== activeTenantId) {
+            if (m.tenant_id !== activeTenantId || type !== activeTenantType) {
                 await supabase.auth.updateUser({
                     data: {
                         active_tenant_id: m.tenant_id,
@@ -102,16 +111,19 @@ export async function updateSession(request: NextRequest) {
             }
             
             if (routeMap[type] && path !== routeMap[type]) {
-                return NextResponse.redirect(new URL(routeMap[type], request.url))
+                return redirectWithCookies(new URL(routeMap[type], request.url))
             }
+        } else if (typedMemberships?.length > 1 && !isSelectCompanyPath && (!activeTenantId || path === '/')) {
+            // Se tiver mais de 1 empresa e NÃO estiver na tela de seleção e NÃO tiver ativo / tiver na raiz
+            return redirectWithCookies(new URL('/select-company', request.url))
         }
     }
 
     // SUPER ADMIN: Só pode acessar rotas /super-admin/*
     if (isSuperAdmin(user)) {
       const isSuperAdminPath = path.startsWith('/super-admin/')
-      if (!isSuperAdminPath && !isSelectCompanyPath) {
-        return NextResponse.redirect(new URL('/super-admin/dashboard', request.url))
+      if (!isSuperAdminPath && !path.startsWith('/logout')) {
+        return redirectWithCookies(new URL('/super-admin/dashboard', request.url))
       }
       return supabaseResponse
     }
@@ -127,7 +139,7 @@ export async function updateSession(request: NextRequest) {
     if (activeTenantType && isDashboardPath) {
         const expectedPrefix = typeToPathMap[activeTenantType]
         if (expectedPrefix && !path.startsWith(expectedPrefix)) {
-            return NextResponse.redirect(new URL('/unauthorized', request.url))
+            return redirectWithCookies(new URL('/unauthorized', request.url))
         }
     }
 }
