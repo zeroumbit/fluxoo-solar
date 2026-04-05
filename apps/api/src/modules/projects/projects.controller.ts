@@ -5,6 +5,7 @@ import {
   Post,
   Param,
   Query,
+  Patch,
   UseGuards,
   Req,
   HttpCode
@@ -30,9 +31,13 @@ export class ProjectsController {
 
   @Get('received')
   @Permissions('view:projects')
-  async getReceivedProjects(@Req() req: any) {
+  async getReceivedProjects(
+    @Req() req: any,
+    @Query('status') status?: string,
+    @Query('search') search?: string
+  ) {
     const activeTenantId = req.user?.app_metadata?.active_tenant_id;
-    return await this.projectsService.getReceivedByEngineering(activeTenantId);
+    return await this.projectsService.getReceivedByEngineering(activeTenantId, { status, search });
   }
 
   @Get('stats')

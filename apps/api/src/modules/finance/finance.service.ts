@@ -118,7 +118,8 @@ export class FinanceService {
 
     // Valor por integradora
     const revenueByIntegrator = allProjects.reduce((acc, p) => {
-      const integratorName = p.integrator?.fantasy_name || p.integrator?.name || 'Integradora';
+      const integrator = Array.isArray(p.integrator) ? p.integrator[0] : p.integrator;
+      const integratorName = integrator?.fantasy_name || integrator?.name || 'Integradora';
       if (!acc[integratorName]) {
         acc[integratorName] = { count: 0, total_cents: 0 };
       }

@@ -18,6 +18,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { FinanceModule } from './modules/finance/finance.module';
 import { SyncModule } from './modules/sync/sync.module';
 import { PlansModule } from './modules/plans/plans.module';
+import { ReviewsModule } from './modules/reviews/reviews.module';
 import { HealthController } from './app-health.controller';
 
 @Module({
@@ -41,6 +42,7 @@ import { HealthController } from './app-health.controller';
     FinanceModule,
     SyncModule,
     PlansModule,
+    ReviewsModule,
   ],
   controllers: [AppController, HealthController],
   providers: [

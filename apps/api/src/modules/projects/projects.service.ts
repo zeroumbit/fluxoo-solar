@@ -150,17 +150,29 @@ export class ProjectsService {
   /**
    * Projetos recebidos pela engenharia (delegados por integradoras).
    */
-  async getReceivedByEngineering(activeTenantId: string) {
+  async getReceivedByEngineering(activeTenantId: string, filters?: { status?: string; search?: string }) {
     const admin = this.supabase.getAdminClient();
 
-    const { data: projects, error } = await admin
+    let query = admin
       .from('projects')
       .select(`
         *,
         integrator:tenants!owner_tenant_id(id, name, fantasy_name, type),
         client:clients(*)
       `)
-      .eq('delegated_engineering_tenant_id', activeTenantId)
+      .eq('delegated_engineering_tenant_id', activeTenantId);
+
+    // Filtro por status
+    if (filters?.status && filters.status !== 'all') {
+      query = query.eq('status', filters.status);
+    }
+
+    // Busca por código ou nome da integradora
+    if (filters?.search) {
+      query = query.or(`code.ilike.%${filters.search}%,title.ilike.%${filters.search}%`);
+    }
+
+    const { data: projects, error } = await query
       .order('created_at', { ascending: false });
 
     if (error) {
