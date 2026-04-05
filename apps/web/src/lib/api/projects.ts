@@ -1,5 +1,3 @@
-import axios from 'axios';
-
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export const projectsApi = {
@@ -7,33 +5,56 @@ export const projectsApi = {
    * Listagem de projetos (RLS transparente via Backend NestJS).
    */
   async list(filters?: { status?: string; search?: string }) {
-    const { data } = await axios.get(`${API_URL}/projects`, { params: filters });
-    return data;
+    const url = new URL(`${API_URL}/projects`);
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value) url.searchParams.append(key, value);
+      });
+    }
+    const response = await fetch(url.toString());
+    if (!response.ok) throw new Error('Não foi possível carregar os projetos');
+    return await response.json();
   },
 
   async getById(id: string) {
-    const { data } = await axios.get(`${API_URL}/projects/${id}`);
-    return data;
+    const response = await fetch(`${API_URL}/projects/${id}`);
+    if (!response.ok) throw new Error('Projeto não encontrado');
+    return await response.json();
   },
 
   /**
    * Criação transacional de projeto (Cliente + Projeto + 4 Itens Checklist).
    */
   async create(payload: any) {
-    const { data } = await axios.post(`${API_URL}/projects`, payload);
-    return data;
+    const response = await fetch(`${API_URL}/projects`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) throw new Error('Erro ao criar projeto');
+    return await response.json();
   },
 
   /**
    * Upload de arquivo via Signed URL.
    */
   async getUploadUrl(projectId: string, itemId: string, fileName: string) {
-    const { data } = await axios.post(`${API_URL}/projects/${projectId}/checklist/${itemId}/upload-url`, { fileName });
-    return data;
+    const response = await fetch(`${API_URL}/projects/${projectId}/checklist/${itemId}/upload-url`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fileName }),
+    });
+    if (!response.ok) throw new Error('Erro ao obter URL de upload');
+    return await response.json();
   },
 
   async updateChecklistItemStatus(itemId: string, status: string, rejectionReason?: string) {
-    const { data } = await axios.patch(`${API_URL}/checklist/${itemId}/status`, { status, rejectionReason });
-    return data;
+    const response = await fetch(`${API_URL}/checklist/${itemId}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status, rejectionReason }),
+    });
+    if (!response.ok) throw new Error('Erro ao atualizar status do checklist');
+    return await response.json();
   }
 };

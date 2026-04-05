@@ -1,66 +1,57 @@
 'use client';
 
+import React from 'react';
+import { Zap, Building2, Flame, ArrowLeft, ArrowRight } from 'lucide-react';
 import { useOnboardingStore } from '@/store/use-onboarding-store';
-import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Zap, Briefcase, TrendingUp, ChevronLeft } from 'lucide-react';
+import { SelectableCard } from '../../components/auth-ui';
 
 export function Step2Type() {
   const { updateForm, nextStep, prevStep, formData } = useOnboardingStore();
 
-  const handleSelect = (type: string) => {
-    updateForm({ tenantType: type });
-    nextStep();
+  const handleNext = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (formData.tenantType) {
+      nextStep();
+    }
   };
 
-  const types = [
-    {
-      id: 'INTEGRATOR',
-      title: 'Integradora',
-      description: 'Instalo usinas solares do telhado ao solo.',
-      icon: Zap,
-    },
-    {
-      id: 'ENGINEERING_FIRM',
-      title: 'Empresa de Engenharia',
-      description: 'Faço projetos técnicos e emissão de ART.',
-      icon: Briefcase,
-    },
-    {
-      id: 'RESELLER',
-      title: 'Revendedora',
-      description: 'Vendo soluções de energia solar direto.',
-      icon: TrendingUp,
-    },
-  ];
-
   return (
-    <div className="space-y-4">
-      <div className="grid gap-4">
-        {types.map((type) => (
-          <Card 
-            key={type.id} 
-            className={`cursor-pointer transition-all border-2 ${
-                formData.tenantType === type.id ? 'border-primary ring-1 ring-primary' : 'hover:border-primary/50'
-            }`}
-            onClick={() => handleSelect(type.id)}
-          >
-            <CardHeader className="flex flex-row items-center gap-4 space-y-0">
-              <div className={`p-2 rounded-lg ${formData.tenantType === type.id ? 'bg-primary text-white' : 'bg-primary/10 text-primary'}`}>
-                <type.icon className="w-6 h-6" />
-              </div>
-              <div className="flex flex-col">
-                <CardTitle className="text-lg">{type.title}</CardTitle>
-                <CardDescription className="text-xs">{type.description}</CardDescription>
-              </div>
-            </CardHeader>
-          </Card>
-        ))}
+    <form onSubmit={handleNext} className="space-y-8 animate-in fade-in">
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <SelectableCard 
+            title="Integradora" 
+            description="Instalo usinas solares" 
+            icon={<Zap className="w-8 h-8" />} 
+            isSelected={formData.tenantType === 'INTEGRATOR'} 
+            onClick={() => updateForm({ tenantType: 'INTEGRATOR' })} 
+          />
+          <SelectableCard 
+            title="Engenharia" 
+            description="Faço projetos e ART" 
+            icon={<Building2 className="w-8 h-8" />} 
+            isSelected={formData.tenantType === 'ENGINEERING_FIRM'} 
+            onClick={() => updateForm({ tenantType: 'ENGINEERING_FIRM' })} 
+          />
+          <SelectableCard 
+            title="Revendedora" 
+            description="Vendo para clientes" 
+            icon={<Flame className="w-8 h-8" />} 
+            isSelected={formData.tenantType === 'RESELLER'} 
+            onClick={() => updateForm({ tenantType: 'RESELLER' })} 
+          />
+        </div>
       </div>
 
-      <Button variant="outline" className="w-full flex gap-2" onClick={prevStep}>
-        <ChevronLeft className="w-4 h-4" /> Voltar
-      </Button>
-    </div>
+      <div className="pt-8 border-t border-[#f2f4f6] flex justify-between gap-4">
+        <button type="button" onClick={prevStep} className="px-6 py-3.5 text-[#545f73] font-bold uppercase tracking-widest text-[0.8rem] hover:bg-[#f2f4f6] rounded-xl flex items-center gap-2">
+          <ArrowLeft className="w-4 h-4" /> Anterior
+        </button>
+        
+        <button type="submit" disabled={!formData.tenantType} className="px-8 py-3.5 bg-gradient-to-br from-[#ffd700] to-[#705d00] text-white font-bold uppercase tracking-widest text-[0.8rem] rounded-xl shadow-lg hover:scale-[1.02] transition-all flex items-center gap-2 disabled:opacity-50">
+          Continuar <ArrowRight className="w-4 h-4" />
+        </button>
+      </div>
+    </form>
   );
 }

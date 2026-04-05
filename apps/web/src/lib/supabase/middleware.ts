@@ -1,5 +1,15 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { SUPER_ADMIN } from '@/constants/super-admin'
+
+function isSuperAdmin(user: Awaited<ReturnType<ReturnType<typeof createServerClient>['auth']['getUser']>>['user']): boolean {
+  if (!user) return false
+  return (
+    user.email === SUPER_ADMIN.EMAIL ||
+    user.id === SUPER_ADMIN.UID ||
+    user.app_metadata?.active_tenant_type === 'SUPER_ADMIN'
+  )
+}
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -43,6 +53,10 @@ export async function updateSession(request: NextRequest) {
 
   // Logado acessando rota de auth -> Select Company ou Dashboard
   if (user && isAuthRoute) {
+    // Super Admin sempre vai para /super-admin, nunca para /select-company
+    if (isSuperAdmin(user)) {
+      return NextResponse.redirect(new URL('/super-admin/dashboard', request.url))
+    }
     return NextResponse.redirect(new URL('/select-company', request.url))
   }
 
@@ -51,9 +65,18 @@ export async function updateSession(request: NextRequest) {
     const activeTenantType = user.app_metadata?.active_tenant_type
     const activeTenantId = user.app_metadata?.active_tenant_id
 
+    // SUPER ADMIN: Só pode acessar /super-admin, qualquer outra rota é redirecionada
+    if (isSuperAdmin(user)) {
+      if (!path.startsWith('/super-admin')) {
+        return NextResponse.redirect(new URL('/super-admin/dashboard', request.url))
+      }
+      // Super Admin está na rota correta, permitir
+      return supabaseResponse
+    }
+
     // Se estiver em uma rota de dashboard mas sem tenant ativo
     const isDashboardPath = ['/super-admin', '/integrator', '/engineering', '/reseller'].some(p => path.startsWith(p))
-    
+
     if (isDashboardPath && !activeTenantId) {
         return NextResponse.redirect(new URL('/select-company', request.url))
     }

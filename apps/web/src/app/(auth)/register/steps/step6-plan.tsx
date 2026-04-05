@@ -1,55 +1,91 @@
 'use client';
 
+import React from 'react';
+import { CheckCircle2, ArrowLeft, ArrowRight } from 'lucide-react';
 import { useOnboardingStore } from '@/store/use-onboarding-store';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Check, ChevronLeft } from 'lucide-react';
+import { SelectableCard } from '../../components/auth-ui';
 
 export function Step6Plan() {
   const { updateForm, nextStep, prevStep, formData } = useOnboardingStore();
 
-  const plans = [
-    { id: 'ESSENTIAL', name: 'ESSENTIAL', price: '197', features: ['5 Projetos/mês', '1 Equipe', 'Suporte E-mail'] },
-    { id: 'PRO', name: 'PRO', price: '497', features: ['Projetos Ilimitados', 'Equipes Ilimitadas', 'Suporte WhatsApp'] },
-    { id: 'ENTERPRISE', name: 'ENTERPRISE', price: '997', features: ['Personalização Total', 'Multifilial', 'Gerente de Contas'] },
-  ];
-
-  const handleSelect = (pid: string) => {
-    updateForm({ planId: pid });
-    nextStep();
+  const handleNext = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (formData.planId) {
+      nextStep();
+    }
   };
 
   return (
-    <div className="space-y-4">
-      <div className="grid gap-3">
-        {plans.map((p) => (
-          <Card 
-            key={p.id} 
-            className={`cursor-pointer transition-all border-2 ${
-                formData.planId === p.id ? 'border-primary shadow-md' : 'hover:border-primary/40'
-            }`}
-            onClick={() => handleSelect(p.id)}
-          >
-            <CardHeader className="py-4">
-                <div className="flex justify-between items-center">
-                    <CardTitle className="text-lg">{p.name}</CardTitle>
-                    <div className="text-xl font-bold text-primary">R$ {p.price}<span className="text-xs text-muted-foreground">/mês</span></div>
+    <form onSubmit={handleNext} className="space-y-8 animate-in fade-in">
+      <div className="animate-in fade-in">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <SelectableCard 
+            title={<span className="text-2xl font-bold font-['Manrope']">ESSENTIAL</span>}
+            description={
+              <div className="mt-4">
+                <div className="flex items-baseline gap-1 text-[#191c1e] mb-6">
+                  <span className="text-lg font-bold">R$</span>
+                  <span className="text-5xl font-extrabold font-['Manrope']">197</span>
+                  <span className="text-[#545f73] font-medium">/mês</span>
                 </div>
-            </CardHeader>
-            <CardContent className="pb-4 space-y-2">
-                {p.features.map(f => (
-                    <div key={f} className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <Check className="w-3 h-3 text-green-600" /> {f}
-                    </div>
-                ))}
-            </CardContent>
-          </Card>
-        ))}
+                <div className="space-y-3 mb-6">
+                  <div className="flex items-center gap-2"><CheckCircle2 className="w-5 h-5 text-[#1b6d24]" /> 50 Projetos</div>
+                  <div className="flex items-center gap-2"><CheckCircle2 className="w-5 h-5 text-[#1b6d24]" /> 5 Usuários</div>
+                </div>
+              </div>
+            }
+            isSelected={formData.planId?.toLowerCase() === 'essential'} 
+            onClick={() => updateForm({ planId: 'ESSENTIAL' })}
+          />
+          <SelectableCard 
+            title={<span className="text-2xl font-bold font-['Manrope']">PRO</span>}
+            description={
+              <div className="mt-4">
+                <div className="flex items-baseline gap-1 text-[#191c1e] mb-6">
+                  <span className="text-lg font-bold">R$</span>
+                  <span className="text-5xl font-extrabold font-['Manrope']">497</span>
+                  <span className="text-[#545f73] font-medium">/mês</span>
+                </div>
+                <div className="space-y-3 mb-6">
+                  <div className="flex items-center gap-2"><CheckCircle2 className="w-5 h-5 text-[#1b6d24]" /> 200 Projetos</div>
+                  <div className="flex items-center gap-2"><CheckCircle2 className="w-5 h-5 text-[#1b6d24]" /> 20 Usuários</div>
+                </div>
+              </div>
+            }
+            tag="MAIS POPULAR" 
+            isSelected={formData.planId?.toLowerCase() === 'pro'} 
+            onClick={() => updateForm({ planId: 'PRO' })}
+          />
+          <SelectableCard 
+            title={<span className="text-2xl font-bold font-['Manrope']">ENTERPRISE</span>}
+            description={
+              <div className="mt-4">
+                <div className="flex items-baseline gap-1 text-[#191c1e] mb-6">
+                  <span className="text-lg font-bold">R$</span>
+                  <span className="text-5xl font-extrabold font-['Manrope']">997</span>
+                  <span className="text-[#545f73] font-medium">/mês</span>
+                </div>
+                <div className="space-y-3 mb-6">
+                  <div className="flex items-center gap-2"><CheckCircle2 className="w-5 h-5 text-[#1b6d24]" /> Projetos Ilimitados</div>
+                  <div className="flex items-center gap-2"><CheckCircle2 className="w-5 h-5 text-[#1b6d24]" /> Usuários Ilimitados</div>
+                </div>
+              </div>
+            }
+            isSelected={formData.planId?.toLowerCase() === 'enterprise'} 
+            onClick={() => updateForm({ planId: 'ENTERPRISE' })}
+          />
+        </div>
       </div>
 
-      <Button variant="outline" className="w-full flex gap-2" onClick={prevStep}>
-        <ChevronLeft className="w-4 h-4" /> Voltar
-      </Button>
-    </div>
+      <div className="pt-8 border-t border-[#f2f4f6] flex justify-between gap-4">
+        <button type="button" onClick={prevStep} className="px-6 py-3.5 text-[#545f73] font-bold uppercase tracking-widest text-[0.8rem] hover:bg-[#f2f4f6] rounded-xl flex items-center gap-2">
+          <ArrowLeft className="w-4 h-4" /> Anterior
+        </button>
+        
+        <button type="submit" disabled={!formData.planId} className="px-8 py-3.5 bg-gradient-to-br from-[#ffd700] to-[#705d00] text-white font-bold uppercase tracking-widest text-[0.8rem] rounded-xl shadow-lg hover:scale-[1.02] transition-all flex items-center gap-2 disabled:opacity-50">
+          Continuar <ArrowRight className="w-4 h-4" />
+        </button>
+      </div>
+    </form>
   );
 }

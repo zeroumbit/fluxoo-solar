@@ -1,78 +1,110 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState } from 'react';
+import { CreditCard, Building2, Zap, Loader2, ArrowLeft } from 'lucide-react';
 import { useOnboardingStore } from '@/store/use-onboarding-store';
+import { TextInput } from '../../components/auth-ui';
 import { onboardingApi } from '@/lib/api/onboarding';
-import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
-import { CheckCircle2, Loader2, LoaderCircle } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
 
 export function Step7Checkout() {
-  const { formData, reset, prevStep } = useOnboardingStore();
-  const [loading, setLoading] = useState(false);
-  const router = useRouter();
-  const { toast } = useToast();
+  const { formData, nextStep, prevStep } = useOnboardingStore();
+  const [isLoading, setIsLoading] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState('credit_card');
+  const [cardData, setCardData] = useState({
+    cardName: '',
+    cardNumber: '',
+    cardExpiry: '',
+    cardCvv: '',
+  });
 
-  const handleFinish = async () => {
-    setLoading(true);
+  const handleFinish = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
     try {
-      await onboardingApi.register(formData);
-      toast({ title: 'Tudo pronto!', description: 'Sua empresa foi cadastrada. Faça login para começar.' });
-      reset();
-      router.push('/login?message=Cadastro realizado! Faça login para acessar sua conta.');
-    } catch (err: any) {
-      toast({ variant: 'destructive', title: 'Falha no cadastro', description: err.message });
+      // In a real app, we would send payment info too
+      await onboardingApi.register({ ...formData, paymentMethod, cardData });
+      nextStep(); // Go to Step 8 Success
+    } catch (err) {
+      console.error("Checkout error", err);
+      alert("Erro ao finalizar cadastro. Tente novamente.");
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  return (
-    <Card className="border-primary/20 bg-primary/5">
-      <CardHeader className="text-center space-y-2">
-        <CheckCircle2 className="w-12 h-12 text-primary mx-auto" />
-        <CardTitle className="text-2xl font-bold">Confirmação de Acesso</CardTitle>
-        <p className="text-sm text-muted-foreground px-4">
-            Ao confirmar, sua conta corporativa será criada no **Fluxoo Solar**. 
-            Nesta etapa experimental, o pagamento será processado via boleto após o primeiro acesso.
-        </p>
-      </CardHeader>
-      
-      <CardContent className="space-y-4 pt-4">
-        <div className="bg-white rounded-lg p-4 border space-y-2 shadow-sm text-sm">
-            <div className="flex justify-between border-b pb-2">
-                <span className="text-muted-foreground">Empresa:</span>
-                <span className="font-semibold">{formData.company.legalName}</span>
-            </div>
-            <div className="flex justify-between border-b pb-2">
-                <span className="text-muted-foreground">Plano Selecionado:</span>
-                <span className="font-semibold">{formData.planId}</span>
-            </div>
-            <div className="flex justify-between">
-                <span className="text-muted-foreground">E-mail:</span>
-                <span className="font-semibold">{formData.email}</span>
-            </div>
-        </div>
-      </CardContent>
+  const planPrice = formData.planId === 'ESSENTIAL' ? '197' : formData.planId === 'ENTERPRISE' ? '997' : '497';
 
-      <CardFooter className="flex flex-col gap-3">
-        <Button className="w-full text-lg h-14" onClick={handleFinish} disabled={loading}>
-          {loading ? (
-            <div className="flex items-center gap-2">
-                 <Loader2 className="w-5 h-5 animate-spin" /> Processando...
+  return (
+    <form onSubmit={handleFinish} className="animate-in fade-in grid grid-cols-1 lg:grid-cols-12 gap-12">
+      <div className="lg:col-span-7 space-y-10">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {[
+            { id: 'credit_card', label: 'Cartão de Crédito', icon: <CreditCard className="w-8 h-8 mb-2" /> },
+            { id: 'boleto', label: 'Boleto', icon: <Building2 className="w-8 h-8 mb-2" /> },
+            { id: 'pix', label: 'PIX', icon: <Zap className="w-8 h-8 mb-2" /> }
+          ].map(method => (
+            <label key={method.id} className={`relative flex flex-col items-center justify-center p-6 bg-white border-2 rounded-xl cursor-pointer transition-all ${paymentMethod === method.id ? 'border-[#705d00] text-[#705d00] shadow-sm bg-[#fffbeb]' : 'border-[#d0c6ab]/30 text-[#545f73] hover:border-[#d0c6ab]'}`}>
+              <input type="radio" name="payment" value={method.id} checked={paymentMethod === method.id} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPaymentMethod(e.target.value)} className="absolute opacity-0" />
+              {method.icon}
+              <span className="font-bold text-sm">{method.label}</span>
+            </label>
+          ))}
+        </div>
+
+        {paymentMethod === 'credit_card' && (
+          <div className="bg-[#f7f9fb] p-8 rounded-xl border border-[#d0c6ab]/30 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="md:col-span-2">
+              <TextInput label="Nome no Cartão" value={cardData.cardName} onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setCardData({...cardData, cardName: e.target.value})} required />
             </div>
-          ) : (
-            'Finalizar Cadastro e Contratar'
-          )}
-        </Button>
-        {!loading && (
-          <Button variant="ghost" className="w-full text-muted-foreground" onClick={prevStep}>
-            Revisar dados
-          </Button>
+            <div className="md:col-span-2">
+              <TextInput label="Número" value={cardData.cardNumber} onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setCardData({...cardData, cardNumber: e.target.value})} required />
+            </div>
+            <TextInput label="Validade" placeholder="MM/AA" value={cardData.cardExpiry} onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setCardData({...cardData, cardExpiry: e.target.value})} required />
+            <TextInput label="CVV" type="password" value={cardData.cardCvv} onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setCardData({...cardData, cardCvv: e.target.value})} required />
+          </div>
         )}
-      </CardFooter>
-    </Card>
+
+        {paymentMethod === 'pix' && (
+          <div className="bg-[#f7f9fb] p-8 rounded-xl border border-[#d0c6ab]/30 text-center">
+            <div className="w-48 h-48 mx-auto bg-white p-2 rounded-xl border border-[#d0c6ab]/50 mb-6">
+              <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=fluxoo-pix" alt="QR Code" className="w-full h-full opacity-90" />
+            </div>
+            <p className="text-sm font-mono bg-white p-3 rounded-lg border border-[#e0e3e5] text-[#545f73] mb-6 truncate">00020126580014br.gov.bcb.pix...</p>
+            <div className="text-left">
+              <label className="block text-[0.75rem] font-bold text-[#545f73] uppercase tracking-wider mb-2">Upload Comprovante</label>
+              <input type="file" className="w-full bg-white border border-[#d0c6ab]/50 rounded-lg p-2 text-sm text-[#545f73] file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-bold file:uppercase file:bg-[#ffd700] file:text-[#705d00] cursor-pointer" />
+            </div>
+          </div>
+        )}
+
+        {paymentMethod === 'boleto' && (
+          <div className="bg-[#fffbeb] p-6 rounded-xl border border-[#ffd700]/50 text-[#705d00] text-sm font-bold flex items-center justify-center gap-3">
+            <Building2 className="w-6 h-6" /> O boleto será gerado automaticamente.
+          </div>
+        )}
+
+        <div className="pt-8 border-t border-[#f2f4f6] flex justify-between gap-4">
+          <button type="button" onClick={prevStep} className="px-6 py-3.5 text-[#545f73] font-bold uppercase tracking-widest text-[0.8rem] hover:bg-[#f2f4f6] rounded-xl flex items-center gap-2">
+            <ArrowLeft className="w-4 h-4" /> Anterior
+          </button>
+          
+          <button type="submit" disabled={isLoading} className="px-8 py-3.5 bg-gradient-to-br from-[#ffd700] to-[#705d00] text-white font-bold uppercase tracking-widest text-[0.8rem] rounded-xl shadow-lg hover:scale-[1.02] transition-all flex items-center gap-2 disabled:opacity-50">
+            {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Finalizar Assinatura'} 
+          </button>
+        </div>
+      </div>
+
+      <div className="lg:col-span-5">
+        <div className="bg-[#191c1e] text-white p-8 rounded-2xl shadow-xl relative overflow-hidden sticky top-32">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-[#ffd700]/10 rounded-bl-full blur-xl"></div>
+          <h3 className="text-xs font-bold text-[#ffd700] uppercase tracking-widest mb-2">Resumo</h3>
+          <p className="text-2xl font-['Manrope'] font-bold mb-8">Plano {formData.planId?.toUpperCase() || 'PRO'}</p>
+          <div className="flex justify-between border-t border-white/10 pt-6">
+            <span className="text-sm text-[#a0aabf]">Total a Pagar</span>
+            <span className="text-2xl font-bold text-[#ffd700]">R$ {planPrice}/mês</span>
+          </div>
+        </div>
+      </div>
+    </form>
   );
 }

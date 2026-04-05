@@ -6,12 +6,27 @@ import { Building2, ChevronRight, History, Home } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { selectTenant } from './actions';
+import { SUPER_ADMIN } from '@/constants/super-admin';
+
+function isSuperAdmin(user: Awaited<ReturnType<ReturnType<typeof createClient>['auth']['getUser']>>['user']): boolean {
+  if (!user) return false
+  return (
+    user.email === SUPER_ADMIN.EMAIL ||
+    user.id === SUPER_ADMIN.UID ||
+    user.app_metadata?.active_tenant_type === 'SUPER_ADMIN'
+  )
+}
 
 export default async function SelectCompanyPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) { redirect('/login'); }
+
+  // Super Admin não passa pela seleção de empresa, vai direto para /super-admin
+  if (isSuperAdmin(user)) {
+    redirect('/super-admin/dashboard');
+  }
 
   const { data: memberships, error } = await supabase
     .from('tenant_user_memberships')

@@ -3,14 +3,16 @@ import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@
 @Injectable()
 export class SuperAdminGuard implements CanActivate {
   private readonly SUPER_ADMIN_EMAIL = 'zeroumbit@gmail.com';
+  private readonly SUPER_ADMIN_UID = '33a8ef37-0151-404a-a16b-061027534ff5';
 
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest();
     const user = request.user; // Obtido via AuthGuard (JWT)
 
-    // Se o usuário Logado é o Super Admin (pela email ou active_tenant_type na claim)
+    // Se o usuário Logado é o Super Admin (pela email, UID ou active_tenant_type na claim)
     const isSuperAdmin =
       user?.email === this.SUPER_ADMIN_EMAIL ||
+      user?.id === this.SUPER_ADMIN_UID ||
       user?.app_metadata?.active_tenant_type === 'SUPER_ADMIN';
 
     if (!isSuperAdmin) return true;
