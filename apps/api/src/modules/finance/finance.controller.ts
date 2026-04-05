@@ -28,4 +28,11 @@ export class FinanceController {
     const activeTenantId = req.user?.app_metadata?.active_tenant_id;
     return await this.financeService.getEngineeringSummary(activeTenantId);
   }
+
+  @Get('engineering-stats')
+  @Permissions('view:finance')
+  async getEngineeringStats(@Req() req: any) {
+    const activeTenantId = req.user?.app_metadata?.active_tenant_id;
+    return await this.financeService.getEngineeringDetailedStats(activeTenantId);
+  }
 }

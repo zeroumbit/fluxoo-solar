@@ -32,12 +32,12 @@ export async function login(formData: FormData) {
 
   revalidatePath('/', 'layout')
 
-  // 1. Super Admin vai direto para /super-admin, nunca para /select-company
+  // 1. Super Admin vai direto para /super-admin/dashboard
   if (isSuperAdmin(data.user)) {
     redirect('/super-admin/dashboard')
   }
 
-  // 2. Se já tem tenant ativo nos metadados (vêm do Onboarding ou escolha anterior), vai direto
+  // 2. Se já tem tenant ativo nos metadados, vai direto
   const metadata = data.user!.user_metadata;
   const activeTenantId = metadata?.active_tenant_id
   const activeTenantType = metadata?.active_tenant_type
@@ -53,7 +53,7 @@ export async function login(formData: FormData) {
     }
   }
 
-  // 3. Lógica de Redirecionamento Inteligente (Auto-select se tiver apenas 1 empresa)
+  // 3. Busca o tenant do usuário e redireciona direto ao dashboard
   const { data: memberships } = await supabase
     .from('tenant_user_memberships')
     .select('tenant_id, role, tenants(type)')
@@ -62,10 +62,11 @@ export async function login(formData: FormData) {
 
   const typedMemberships = memberships as any[];
 
-  if (typedMemberships?.length === 1) {
+  if (typedMemberships && typedMemberships.length > 0) {
+    // Pega o primeiro tenant ativo (se tiver múltiplos, pega o primeiro)
     const m = typedMemberships[0];
     const type = m.tenants.type;
-    
+
     // Atualizar os metadados da sessão para persistir a escolha
     await supabase.auth.updateUser({
       data: {
@@ -86,7 +87,8 @@ export async function login(formData: FormData) {
     }
   }
 
-  redirect('/select-company')
+  // Se não encontrou nenhum tenant, vai para página de erro
+  redirect('/login?error=Nenhuma+empresa+encontrada.+Contate+o+suporte.')
 }
 
 export async function signup(formData: FormData) {

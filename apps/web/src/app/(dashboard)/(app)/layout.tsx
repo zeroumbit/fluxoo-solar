@@ -24,7 +24,7 @@ export default async function DashboardLayout({
     user.id === SUPER_ADMIN.UID ||
     activeTenantType === 'SUPER_ADMIN';
 
-  // If no tenant is selected, try to automatically pick one if the user only has one
+  // If no tenant is selected, try to automatically pick one
   if (!isSuperAdmin && !activeTenantId) {
     const { data: memberships } = await supabase
       .from('tenant_user_memberships')
@@ -34,11 +34,11 @@ export default async function DashboardLayout({
 
     const typedMemberships = memberships as any[];
 
-    if (typedMemberships?.length === 1) {
+    if (typedMemberships && typedMemberships.length > 0) {
        const m = typedMemberships[0];
        const type = m.tenants.type;
-       
-       // Update user metadata 
+
+       // Update user metadata
        await supabase.auth.updateUser({
          data: {
            active_tenant_id: m.tenant_id,
@@ -58,7 +58,8 @@ export default async function DashboardLayout({
        }
     }
 
-    redirect('/select-company');
+    // Sem tenant encontrado -> login com erro
+    redirect('/login?error=Nenhuma+empresa+encontrada.+Contate+o+suporte.');
   }
 
   // Redirect based on current active tenant type if they land on generic root

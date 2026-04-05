@@ -74,6 +74,15 @@ export const projectsApi = {
   },
 
   /**
+   * Estatísticas do dashboard de engenharia.
+   */
+  async getStats() {
+    const response = await fetch(`${API_URL}/projects/stats`);
+    if (!response.ok) throw new Error('Não foi possível carregar as estatísticas');
+    return await response.json();
+  },
+
+  /**
    * Delegar um projeto para uma empresa de engenharia.
    */
   async delegate(projectId: string, engineeringTenantId: string) {

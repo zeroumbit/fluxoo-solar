@@ -130,7 +130,7 @@ export class ProjectsService {
 
   async create(dto: any, activeTenantId: string, currentUserId: string) {
     const admin = this.supabase.getAdminClient();
-    
+
     const { data, error } = await admin
       .from('projects')
       .insert({
@@ -142,8 +142,121 @@ export class ProjectsService {
       })
       .select()
       .single();
-    
+
     if (error) throw new BadRequestException(error.message);
     return data;
+  }
+
+  /**
+   * Projetos recebidos pela engenharia (delegados por integradoras).
+   */
+  async getReceivedByEngineering(activeTenantId: string) {
+    const admin = this.supabase.getAdminClient();
+
+    const { data: projects, error } = await admin
+      .from('projects')
+      .select(`
+        *,
+        integrator:tenants!owner_tenant_id(id, name, fantasy_name, type),
+        client:clients(*)
+      `)
+      .eq('delegated_engineering_tenant_id', activeTenantId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      this.logger.error('Erro ao buscar projetos recebidos:', error);
+      throw new BadRequestException(error.message);
+    }
+
+    return projects || [];
+  }
+
+  /**
+   * Estatísticas para dashboard de engenharia.
+   */
+  async getEngineeringStats(activeTenantId: string) {
+    const admin = this.supabase.getAdminClient();
+
+    // Buscar todos os projetos delegados
+    const { data: projects, error } = await admin
+      .from('projects')
+      .select('id, status, total_value_cents, deadline, created_at, title, type')
+      .eq('delegated_engineering_tenant_id', activeTenantId);
+
+    if (error) {
+      this.logger.error('Erro ao buscar estatísticas:', error);
+      throw new BadRequestException(error.message);
+    }
+
+    const allProjects = projects || [];
+    const now = new Date();
+
+    // Contagem por status
+    const statusCounts = allProjects.reduce((acc, p) => {
+      const status = p.status || 'UNKNOWN';
+      acc[status] = (acc[status] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    // Projetos ativos (não completados/cancelados)
+    const activeProjects = allProjects.filter(
+      p => !['COMPLETED', 'CANCELED', 'REJECTED'].includes(p.status)
+    );
+
+    // Projetos atrasados (deadline passado e não completo)
+    const delayedProjects = allProjects.filter(p => {
+      if (!p.deadline) return false;
+      if (['COMPLETED', 'CANCELED', 'REJECTED'].includes(p.status)) return false;
+      return new Date(p.deadline) < now;
+    });
+
+    // Valor total dos projetos ativos
+    const totalActiveValue = activeProjects.reduce(
+      (acc, p) => acc + (p.total_value_cents || 0), 0
+    );
+
+    // Valor recebido (10% do valor dos projetos - taxa de engenharia)
+    const engineeringFeePercent = 0.10;
+    const totalReceivable = Math.floor(totalActiveValue * engineeringFeePercent);
+
+    // Faturamento aberto (projetos em DESIGNING, REVIEW, APPROVED)
+    const openBillingProjects = activeProjects.filter(
+      p => ['DESIGNING', 'REVIEW', 'APPROVED', 'PENDING'].includes(p.status)
+    );
+    const openBillingValue = openBillingProjects.reduce(
+      (acc, p) => acc + (p.total_value_cents || 0), 0
+    );
+
+    // Projetos por mês (últimos 6 meses)
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    const recentProjects = allProjects.filter(
+      p => new Date(p.created_at) >= sixMonthsAgo
+    );
+
+    const monthlyActivity = recentProjects.reduce((acc, p) => {
+      const date = new Date(p.created_at);
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      if (!acc[key]) acc[key] = 0;
+      acc[key]++;
+      return acc;
+    }, {} as Record<string, number>);
+
+    return {
+      total_projects: allProjects.length,
+      active_projects: activeProjects.length,
+      delayed_projects: delayedProjects.length,
+      delayed_project_ids: delayedProjects.map(p => p.id),
+      total_value_cents: totalActiveValue,
+      total_receivable_cents: totalReceivable,
+      open_billing_cents: openBillingValue,
+      status_counts: statusCounts,
+      monthly_activity: monthlyActivity,
+      projects_by_type: allProjects.reduce((acc, p) => {
+        const type = p.type || 'SOLAR';
+        acc[type] = (acc[type] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>)
+    };
   }
 }

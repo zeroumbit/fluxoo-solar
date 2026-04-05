@@ -1,11 +1,11 @@
-import { 
-  Body, 
-  Controller, 
-  Get, 
-  Post, 
-  Param, 
-  Query, 
-  UseGuards, 
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Param,
+  Query,
+  UseGuards,
   Req,
   HttpCode
 } from '@nestjs/common';
@@ -28,6 +28,20 @@ export class ProjectsController {
     return await this.projectsService.findAll(status, search);
   }
 
+  @Get('received')
+  @Permissions('view:projects')
+  async getReceivedProjects(@Req() req: any) {
+    const activeTenantId = req.user?.app_metadata?.active_tenant_id;
+    return await this.projectsService.getReceivedByEngineering(activeTenantId);
+  }
+
+  @Get('stats')
+  @Permissions('view:projects')
+  async getStats(@Req() req: any) {
+    const activeTenantId = req.user?.app_metadata?.active_tenant_id;
+    return await this.projectsService.getEngineeringStats(activeTenantId);
+  }
+
   @Get(':id')
   @Permissions('view:projects')
   async findOne(@Param('id') id: string) {
@@ -41,10 +55,27 @@ export class ProjectsController {
     @Body() dto: CreateProjectDto,
     @Req() req: any
   ) {
-    // JWT extraido pela lib de auth do Supabase (configurado em hooks globais)
     const activeTenantId = req.user?.app_metadata?.active_tenant_id;
     const currentUserId = req.user?.id;
-    
+
     return await this.projectsService.create(dto, activeTenantId, currentUserId);
+  }
+
+  @Patch(':id/delegate')
+  @Permissions('manage:projects')
+  async delegate(
+    @Param('id') id: string,
+    @Body() body: { delegatedTenantId: string },
+    @Req() req: any
+  ) {
+    const activeTenantId = req.user?.app_metadata?.active_tenant_id;
+    const userRole = req.user?.app_metadata?.active_role;
+
+    return await this.projectsService.delegateToEngineering(
+      id,
+      body.delegatedTenantId,
+      activeTenantId,
+      userRole
+    );
   }
 }

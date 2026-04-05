@@ -73,4 +73,93 @@ export class FinanceService {
           }))
       };
   }
+
+  /**
+   * Dados financeiros detalhados para Engenharia (dashboard).
+   */
+  async getEngineeringDetailedStats(activeTenantId: string) {
+    const admin = this.supabase.getAdminClient();
+
+    // Buscar projetos delegados com dados da integradora
+    const { data: projects, error } = await admin
+      .from('projects')
+      .select(`
+        id,
+        title,
+        total_value_cents,
+        status,
+        deadline,
+        created_at,
+        integrator:tenants!owner_tenant_id(id, name, fantasy_name)
+      `)
+      .eq('delegated_engineering_tenant_id', activeTenantId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw new BadRequestException(error.message);
+
+    const allProjects = projects || [];
+    const now = new Date();
+
+    // Projetos por status de pagamento
+    const completedProjects = allProjects.filter(p => p.status === 'COMPLETED');
+    const inProgressProjects = allProjects.filter(p =>
+      ['DESIGNING', 'REVIEW', 'APPROVED', 'PENDING'].includes(p.status)
+    );
+
+    // Valor total faturado (projetos completados)
+    const totalBilled = completedProjects.reduce(
+      (acc, p) => acc + (p.total_value_cents || 0), 0
+    );
+
+    // Valor a receber (projetos em andamento)
+    const totalReceivable = inProgressProjects.reduce(
+      (acc, p) => acc + (p.total_value_cents || 0), 0
+    );
+
+    // Valor por integradora
+    const revenueByIntegrator = allProjects.reduce((acc, p) => {
+      const integratorName = p.integrator?.fantasy_name || p.integrator?.name || 'Integradora';
+      if (!acc[integratorName]) {
+        acc[integratorName] = { count: 0, total_cents: 0 };
+      }
+      acc[integratorName].count++;
+      acc[integratorName].total_cents += (p.total_value_cents || 0);
+      return acc;
+    }, {} as Record<string, { count: number; total_cents: number }>);
+
+    // Valor por mês (últimos 6 meses)
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    const recentProjects = allProjects.filter(
+      p => new Date(p.created_at) >= sixMonthsAgo
+    );
+
+    const monthlyRevenue = recentProjects.reduce((acc, p) => {
+      const date = new Date(p.created_at);
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      if (!acc[key]) acc[key] = 0;
+      acc[key] += (p.total_value_cents || 0);
+      return acc;
+    }, {} as Record<string, number>);
+
+    // Taxa de engenharia (10% do valor dos projetos)
+    const engineeringFeePercent = 0.10;
+
+    return {
+      total_billed_cents: Math.floor(totalBilled * engineeringFeePercent),
+      total_receivable_cents: Math.floor(totalReceivable * engineeringFeePercent),
+      projects_count: allProjects.length,
+      completed_count: completedProjects.length,
+      in_progress_count: inProgressProjects.length,
+      revenue_by_integrator: Object.entries(revenueByIntegrator).map(([name, data]) => ({
+        name,
+        count: data.count,
+        total_cents: Math.floor(data.total_cents * engineeringFeePercent)
+      })),
+      monthly_revenue_cents: Object.entries(monthlyRevenue).map(([month, cents]) => ({
+        month,
+        cents: Math.floor(cents * engineeringFeePercent)
+      }))
+    };
+  }
 }
