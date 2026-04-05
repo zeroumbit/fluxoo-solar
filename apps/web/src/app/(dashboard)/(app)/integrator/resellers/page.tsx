@@ -14,7 +14,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter
 } from '@/components/ui/dialog'
 import { onboardingApi } from '@/lib/api/onboarding'
-import { toast } from '@/hooks/use-toast'
+import { useToast } from '@/hooks/use-toast'
 import { Plus, Edit, Eye, Ban, Send, Search, Loader2 } from 'lucide-react'
 
 const resellers = [
@@ -31,6 +31,7 @@ const statusColors: Record<string, string> = {
 }
 
 export default function ResellersPage() {
+  const { toast } = useToast()
   const [open, setOpen] = useState(false)
   const [loadingCnpj, setLoadingCnpj] = useState(false)
   const [form, setForm] = useState({ cnpj: '', name: '', email: '', commission: '' })

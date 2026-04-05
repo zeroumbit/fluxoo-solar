@@ -23,6 +23,176 @@
 -- Estas funções executam com permissões de serviço (bypass RLS de forma segura).
 -- Elas retornam APENAS números agregados, nunca dados individuais.
 
+-- Função: Listar tenants com paginação (Super Admin pode ver a lista de empresas)
+CREATE OR REPLACE FUNCTION public.super_admin_list_tenants(
+    p_page      int DEFAULT 1,
+    p_limit     int DEFAULT 20,
+    p_search    text DEFAULT NULL,
+    p_type      text DEFAULT NULL,
+    p_status    text DEFAULT NULL
+)
+RETURNS TABLE (
+    id            uuid,
+    name          text,
+    fantasy_name  text,
+    cnpj          text,
+    phone         text,
+    type          text,
+    is_active     boolean,
+    plan_id       uuid,
+    plan_name     text,
+    plan_slug     text,
+    created_at    timestamptz,
+    total_count   bigint
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    v_offset int;
+BEGIN
+    v_offset := (p_page - 1) * p_limit;
+
+    RETURN QUERY
+    SELECT
+        t.id,
+        t.name,
+        t.fantasy_name,
+        t.cnpj,
+        t.phone,
+        t.type,
+        t.is_active,
+        t.plan_id,
+        p.name as plan_name,
+        p.slug as plan_slug,
+        t.created_at,
+        (SELECT count(*) FROM public.tenants t2
+         WHERE t2.type != 'SUPER_ADMIN'
+           AND (p_search IS NULL OR
+                to_tsvector('simple', t2.name || ' ' || COALESCE(t2.fantasy_name, '') || ' ' || COALESCE(t2.cnpj, ''))
+                @@ plainto_tsquery('simple', p_search)))::bigint as total_count
+    FROM public.tenants t
+    LEFT JOIN public.plans p ON p.id = t.plan_id
+    WHERE t.type != 'SUPER_ADMIN'
+      AND (p_search IS NULL OR
+           to_tsvector('simple', t.name || ' ' || COALESCE(t.fantasy_name, '') || ' ' || COALESCE(t.cnpj, ''))
+           @@ plainto_tsquery('simple', p_search))
+      AND (p_type IS NULL OR t.type = p_type)
+      AND (p_status IS NULL OR
+           (p_status = 'active' AND t.is_active = true) OR
+           (p_status = 'inactive' AND t.is_active = false) OR
+           (p_status = 'suspended' AND t.is_active = false))
+    ORDER BY t.created_at DESC
+    LIMIT p_limit
+    OFFSET v_offset;
+END;
+$$;
+
+-- Função: Métricas de um tenant específico (para modal de detalhes)
+CREATE OR REPLACE FUNCTION public.super_admin_tenant_details(p_tenant_id uuid)
+RETURNS TABLE (
+    id              uuid,
+    name            text,
+    fantasy_name    text,
+    cnpj            text,
+    phone           text,
+    type            text,
+    is_active       boolean,
+    plan_name       text,
+    plan_slug       text,
+    created_at      timestamptz,
+    total_projects  bigint,
+    active_projects bigint,
+    total_users     bigint,
+    active_users    bigint,
+    total_storage_mb numeric
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+    RETURN QUERY
+    SELECT
+        t.id,
+        t.name,
+        t.fantasy_name,
+        t.cnpj,
+        t.phone,
+        t.type,
+        t.is_active,
+        p.name as plan_name,
+        p.slug as plan_slug,
+        t.created_at,
+        COALESCE(proj_stats.total_projects, 0)::bigint as total_projects,
+        COALESCE(proj_stats.active_projects, 0)::bigint as active_projects,
+        COALESCE(user_stats.total_users, 0)::bigint as total_users,
+        COALESCE(user_stats.active_users, 0)::bigint as active_users,
+        COALESCE(storage_stats.total_storage_mb, 0)::numeric as total_storage_mb
+    FROM public.tenants t
+    LEFT JOIN public.plans p ON p.id = t.plan_id
+    LEFT JOIN (
+        SELECT
+            owner_tenant_id,
+            count(*) as total_projects,
+            count(*) FILTER (WHERE status != 'ARCHIVED') as active_projects
+        FROM public.projects
+        WHERE owner_tenant_id = p_tenant_id
+        GROUP BY owner_tenant_id
+    ) proj_stats ON proj_stats.owner_tenant_id = t.id
+    LEFT JOIN (
+        SELECT
+            tum.tenant_id,
+            count(*) as total_users,
+            count(*) FILTER (WHERE gu.last_sign_in_at >= NOW() - INTERVAL '30 days') as active_users
+        FROM public.tenant_user_memberships tum
+        JOIN public.global_users gu ON gu.id = tum.user_id
+        WHERE tum.tenant_id = p_tenant_id AND tum.is_active = true
+        GROUP BY tum.tenant_id
+    ) user_stats ON user_stats.tenant_id = t.id
+    LEFT JOIN (
+        SELECT
+            owner_tenant_id,
+            COALESCE(sum(file_size_bytes), 0) / (1024.0 * 1024.0) as total_storage_mb
+        FROM public.project_files
+        WHERE owner_tenant_id = p_tenant_id
+        GROUP BY owner_tenant_id
+    ) storage_stats ON storage_stats.owner_tenant_id = t.id
+    WHERE t.id = p_tenant_id;
+END;
+$$;
+
+-- Função: Ativar/Desativar tenant (Super Admin gerencia acesso por pagamento)
+CREATE OR REPLACE FUNCTION public.super_admin_toggle_tenant_status(
+    p_tenant_id uuid,
+    p_is_active boolean
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    v_result jsonb;
+BEGIN
+    UPDATE public.tenants
+    SET is_active = p_is_active,
+        updated_at = NOW()
+    WHERE id = p_tenant_id AND type != 'SUPER_ADMIN';
+
+    IF NOT FOUND THEN
+        RETURN jsonb_build_object('error', 'Tenant não encontrado');
+    END IF;
+
+    RETURN jsonb_build_object(
+        'success', true,
+        'tenant_id', p_tenant_id,
+        'is_active', p_is_active
+    );
+END;
+$$;
+
 -- Função: Métricas gerais da plataforma
 CREATE OR REPLACE FUNCTION public.super_admin_platform_metrics()
 RETURNS TABLE (
@@ -235,6 +405,15 @@ $$;
 -- ============================================================================
 -- 2. GRANTS — Todos os usuários autenticados podem chamar as funções
 -- ============================================================================
+GRANT EXECUTE ON FUNCTION public.super_admin_toggle_tenant_status(uuid, boolean) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.super_admin_toggle_tenant_status(uuid, boolean) TO service_role;
+
+GRANT EXECUTE ON FUNCTION public.super_admin_list_tenants(int, int, text, text, text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.super_admin_list_tenants(int, int, text, text, text) TO service_role;
+
+GRANT EXECUTE ON FUNCTION public.super_admin_tenant_details(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.super_admin_tenant_details(uuid) TO service_role;
+
 GRANT EXECUTE ON FUNCTION public.super_admin_platform_metrics() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.super_admin_platform_metrics() TO service_role;
 

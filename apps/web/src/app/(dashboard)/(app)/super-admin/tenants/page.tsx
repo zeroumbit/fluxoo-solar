@@ -1,241 +1,198 @@
-// @ts-nocheck
-'use client'
-
-import { useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { 
-  Building2, Search, Plus, MoreVertical, Eye, Edit, Ban, 
-  MapPin, Phone, Mail, Activity, Database, CheckCircle2 
+import { Badge } from '@/components/ui/badge'
+import {
+  Building2, Search
 } from 'lucide-react'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog"
+import { TenantFilters } from './tenant-filters-client'
+import { TenantActionsDropdown } from './tenant-actions-dropdown'
+import { createClient } from '@/lib/supabase/server'
 
-export default function SuperAdminTenants() {
-  const [detailsModalOpen, setDetailsModalOpen] = useState(false)
-  const [selectedTenant, setSelectedTenant] = useState<any>(null)
+const typeLabels: Record<string, string> = {
+  'INTEGRATOR': 'Integradora',
+  'ENGINEERING_FIRM': 'Engenharia',
+  'RESELLER': 'Revenda',
+}
 
-  const tenants = [
-    { id: '1', nome: "SolarTech Brasil", cnpj: "12.345.678/0001-90", tipo: "Integradora", status: "Ativo", plano: "Pro", location: "São Paulo, SP" },
-    { id: '2', nome: "Engenharia Luz", cnpj: "98.765.432/0001-10", tipo: "Engenharia", status: "Pendente", plano: "Starter", location: "Rio de Janeiro, RJ" },
-    { id: '3', nome: "Revenda Sul", cnpj: "45.678.901/0001-23", tipo: "Revenda", status: "Suspenso", plano: "Enterprise", location: "Curitiba, PR" },
-  ]
+const statusColors: Record<string, string> = {
+  active: 'bg-emerald-100 text-emerald-700',
+  inactive: 'bg-rose-100 text-rose-700',
+}
 
-  const openDetails = (tenant: any) => {
-    setSelectedTenant(tenant)
-    setDetailsModalOpen(true)
-  }
+interface SearchParams {
+  search?: string
+  type?: string
+  status?: string
+  page?: string
+}
+
+export default async function SuperAdminTenants({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>
+}) {
+  const supabase = await createClient()
+  const params = await searchParams
+
+  const page = parseInt(params.page || '1', 10)
+  const limit = 20
+  const search = params.search || null
+  const typeFilter = params.type && params.type !== 'all-types' ? params.type : null
+  const statusFilter = params.status && params.status !== 'all-status' ? params.status : null
+
+  // Busca tenants via RPC
+  const { data: tenantsResult, error } = await supabase
+    .rpc('super_admin_list_tenants', {
+      p_page: page,
+      p_limit: limit,
+      p_search: search,
+      p_type: typeFilter,
+      p_status: statusFilter,
+    })
+
+  const tenants = tenantsResult || []
+  const totalCount = tenants.length > 0 ? tenants[0].total_count : 0
+  const totalPages = Math.ceil(totalCount / limit)
+
+  const startItem = (page - 1) * limit + 1
+  const endItem = Math.min(page * limit, totalCount)
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">Empresas</h1>
-          <p className="text-muted-foreground mt-1">Gerencie todas as empresas da plataforma.</p>
-        </div>
-        <Button className="flex items-center gap-2">
-          <Plus className="w-4 h-4" /> Nova Empresa
-        </Button>
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight text-slate-900">Empresas</h1>
+        <p className="text-muted-foreground mt-1">
+          Visualize todas as empresas cadastradas na plataforma.{' '}
+          <span className="font-medium text-slate-700">
+            {totalCount} empresa{totalCount !== 1 ? 's' : ''} cadastrada{totalCount !== 1 ? 's' : ''}.
+          </span>
+        </p>
       </div>
 
       <Card>
         <CardHeader className="pb-4">
           <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-            <div className="relative w-full md:w-96">
+            <form className="relative w-full md:w-96" action="/super-admin/tenants" method="GET">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <Input placeholder="Buscar por nome ou CNPJ..." className="pl-9 w-full" />
-            </div>
-            
-            <div className="flex flex-wrap gap-2 w-full md:w-auto">
-              <Select defaultValue="all-types">
-                <SelectTrigger className="w-[150px]">
-                  <SelectValue placeholder="Tipo" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all-types">Todos os Tipos</SelectItem>
-                  <SelectItem value="integrator">Integradora</SelectItem>
-                  <SelectItem value="engineering">Engenharia</SelectItem>
-                  <SelectItem value="reseller">Revenda</SelectItem>
-                </SelectContent>
-              </Select>
+              <Input
+                name="search"
+                defaultValue={search || ''}
+                placeholder="Buscar por nome ou CNPJ..."
+                className="pl-9 w-full"
+              />
+              {typeFilter && <input type="hidden" name="type" value={typeFilter} />}
+              {statusFilter && <input type="hidden" name="status" value={statusFilter} />}
+              <input type="hidden" name="page" value="1" />
+              <button type="submit" className="sr-only">Buscar</button>
+            </form>
 
-              <Select defaultValue="all-status">
-                <SelectTrigger className="w-[140px]">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all-status">Todos os Status</SelectItem>
-                  <SelectItem value="active">Ativo</SelectItem>
-                  <SelectItem value="pending">Pendente</SelectItem>
-                  <SelectItem value="suspended">Suspenso</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <TenantFilters
+              defaultType={params.type || 'all-types'}
+              defaultStatus={params.status || 'all-status'}
+              search={search}
+            />
           </div>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
-              <thead className="text-xs text-slate-500 uppercase bg-slate-50 border-b">
-                <tr>
-                  <th className="px-4 py-3 font-medium rounded-tl-lg">Nome</th>
-                  <th className="px-4 py-3 font-medium">CNPJ</th>
-                  <th className="px-4 py-3 font-medium">Tipo</th>
-                  <th className="px-4 py-3 font-medium">Status</th>
-                  <th className="px-4 py-3 font-medium">Plano</th>
-                  <th className="px-4 py-3 font-medium text-right rounded-tr-lg">Ações</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {tenants.map((tenant, i) => (
-                  <tr key={i} className="hover:bg-slate-50">
-                    <td className="px-4 py-3 font-medium text-slate-900">{tenant.nome}</td>
-                    <td className="px-4 py-3 text-slate-600 font-mono text-xs">{tenant.cnpj}</td>
-                    <td className="px-4 py-3 text-slate-600">{tenant.tipo}</td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        tenant.status === 'Ativo' ? 'bg-emerald-100 text-emerald-700' : 
-                        tenant.status === 'Suspenso' ? 'bg-rose-100 text-rose-700' : 
-                        'bg-amber-100 text-amber-700'
-                      }`}>
-                        {tenant.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-slate-600 font-medium">{tenant.plano}</td>
-                    <td className="px-4 py-3 text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => openDetails(tenant)}>
-                            <Eye className="w-4 h-4 mr-2" /> Ver detalhes
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Edit className="w-4 h-4 mr-2" /> Editar
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          {tenant.status === 'Suspenso' ? (
-                            <DropdownMenuItem className="text-emerald-600 focus:text-emerald-700">
-                              <CheckCircle2 className="w-4 h-4 mr-2" /> Reativar Empresa
-                            </DropdownMenuItem>
-                          ) : (
-                            <DropdownMenuItem className="text-rose-600 focus:text-rose-700">
-                              <Ban className="w-4 h-4 mr-2" /> Suspender
-                            </DropdownMenuItem>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="flex items-center justify-between mt-6">
-            <span className="text-sm text-slate-500">Mostrando 1 a 3 de 142 empresas</span>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" disabled>Anterior</Button>
-              <Button variant="outline" size="sm">Próximo</Button>
+          {tenants.length === 0 ? (
+            <div className="text-center py-12">
+              <Building2 className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-slate-900">Nenhuma empresa encontrada</h3>
+              <p className="text-sm text-slate-500 mt-1">
+                {search || typeFilter || statusFilter
+                  ? 'Tente ajustar os filtros de busca.'
+                  : 'Nenhuma empresa cadastrada na plataforma ainda.'}
+              </p>
             </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Dialog open={detailsModalOpen} onOpenChange={setDetailsModalOpen}>
-        <DialogContent className="sm:max-w-[600px]">
-          {selectedTenant && (
+          ) : (
             <>
-              <DialogHeader>
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center">
-                    <Building2 className="w-6 h-6 text-slate-600" />
-                  </div>
-                  <div>
-                    <DialogTitle className="text-xl">{selectedTenant.nome}</DialogTitle>
-                    <DialogDescription className="font-mono text-sm">{selectedTenant.cnpj}</DialogDescription>
-                  </div>
-                </div>
-              </DialogHeader>
-
-              <div className="grid gap-6 py-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-1">
-                    <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Contato</span>
-                    <div className="flex items-center gap-2 text-sm text-slate-700">
-                      <Mail className="w-4 h-4" /> contato@empresa.com
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-slate-700 mt-1">
-                      <Phone className="w-4 h-4" /> (11) 98765-4321
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Localização</span>
-                    <div className="flex items-start gap-2 text-sm text-slate-700">
-                      <MapPin className="w-4 h-4 shrink-0 mt-0.5" /> 
-                      <span>{selectedTenant.location}<br/>Brasil</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-slate-50 p-4 rounded-xl grid grid-cols-3 gap-4 border border-slate-100">
-                  <div className="flex flex-col items-center justify-center text-center">
-                    <Briefcase className="w-5 h-5 text-primary mb-1" />
-                    <span className="text-xl font-bold text-slate-900">42</span>
-                    <span className="text-xs text-slate-500">Projetos Ativos</span>
-                  </div>
-                  <div className="flex flex-col items-center justify-center text-center">
-                    <Activity className="w-5 h-5 text-emerald-500 mb-1" />
-                    <span className="text-xl font-bold text-slate-900">12</span>
-                    <span className="text-xs text-slate-500">Usuários Ativos</span>
-                  </div>
-                  <div className="flex flex-col items-center justify-center text-center">
-                    <Database className="w-5 h-5 text-indigo-500 mb-1" />
-                    <span className="text-xl font-bold text-slate-900">4.2GB</span>
-                    <span className="text-xs text-slate-500">Storage Usado</span>
-                  </div>
-                </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left">
+                  <thead className="text-xs text-slate-500 uppercase bg-slate-50 border-b">
+                    <tr>
+                      <th className="px-4 py-3 font-medium rounded-tl-lg">Nome</th>
+                      <th className="px-4 py-3 font-medium">CNPJ</th>
+                      <th className="px-4 py-3 font-medium">Tipo</th>
+                      <th className="px-4 py-3 font-medium">Status</th>
+                      <th className="px-4 py-3 font-medium">Plano</th>
+                      <th className="px-4 py-3 font-medium text-right rounded-tr-lg">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {tenants.map((tenant: any) => (
+                      <tr key={tenant.id} className="hover:bg-slate-50">
+                        <td className="px-4 py-3">
+                          <div>
+                            <p className="font-medium text-slate-900">{tenant.name}</p>
+                            {tenant.fantasy_name && (
+                              <p className="text-xs text-slate-500">{tenant.fantasy_name}</p>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-slate-600 font-mono text-xs">{tenant.cnpj || '—'}</td>
+                        <td className="px-4 py-3 text-slate-600">
+                          <Badge variant="outline">{typeLabels[tenant.type] || tenant.type}</Badge>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            tenant.is_active
+                              ? statusColors.active
+                              : statusColors.inactive
+                          }`}>
+                            {tenant.is_active ? 'Ativo' : 'Inativo'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-slate-600 font-medium">
+                          {tenant.plan_name || '—'}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <TenantActionsDropdown
+                            tenantId={tenant.id}
+                            isActive={tenant.is_active}
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
 
-              <DialogFooter className="flex items-center justify-between sm:justify-between border-t pt-4">
-                <Button variant="destructive" className="bg-rose-600 hover:bg-rose-700">Excluir Empresa</Button>
+              {/* Paginação */}
+              <div className="flex items-center justify-between mt-6">
+                <span className="text-sm text-slate-500">
+                  Mostrando {startItem} a {endItem} de {totalCount} empresa{totalCount !== 1 ? 's' : ''}
+                </span>
                 <div className="flex gap-2">
-                  <Button variant="outline" onClick={() => setDetailsModalOpen(false)}>Cancelar</Button>
-                  {selectedTenant.status === 'Suspenso' ? (
-                    <Button className="bg-emerald-600 hover:bg-emerald-700">Reativar Acesso</Button>
+                  {page > 1 ? (
+                    <a href={buildPageUrl(page - 1, { search, type: typeFilter, status: statusFilter })} className="inline-flex items-center justify-center rounded-lg border border-input bg-background hover:bg-muted hover:text-foreground h-7 px-2.5 text-[0.8rem] font-medium transition-colors">
+                      Anterior
+                    </a>
                   ) : (
-                    <Button variant="outline" className="text-rose-600 border-rose-200 hover:bg-rose-50">Suspender</Button>
+                    <Button variant="outline" size="sm" disabled>Anterior</Button>
+                  )}
+                  {page < totalPages ? (
+                    <a href={buildPageUrl(page + 1, { search, type: typeFilter, status: statusFilter })} className="inline-flex items-center justify-center rounded-lg border border-input bg-background hover:bg-muted hover:text-foreground h-7 px-2.5 text-[0.8rem] font-medium transition-colors">
+                      Próximo
+                    </a>
+                  ) : (
+                    <Button variant="outline" size="sm" disabled>Próximo</Button>
                   )}
                 </div>
-              </DialogFooter>
+              </div>
             </>
           )}
-        </DialogContent>
-      </Dialog>
+        </CardContent>
+      </Card>
     </div>
   )
+}
+
+function buildPageUrl(page: number, params: { search?: string | null; type?: string | null; status?: string | null }) {
+  const url = new URL('/super-admin/tenants', 'http://localhost')
+  url.searchParams.set('page', page.toString())
+  if (params.search) url.searchParams.set('search', params.search)
+  if (params.type) url.searchParams.set('type', params.type)
+  if (params.status) url.searchParams.set('status', params.status)
+  return url.pathname + url.search
 }

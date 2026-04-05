@@ -30,7 +30,8 @@ export const useOnboardingStore = create<OnboardingState>()(
         company: { cnpj: '', legalName: '', fantasyName: '', phone: '' },
         address: { cep: '', street: '', number: '', complement: '', neighborhood: '', city: '', state: '' },
         responsible: { name: '', cpf: '', roleInCompany: '', phone: '' },
-        planId: 'PRO', // Default
+        planId: null, 
+        selectedPlan: null,
       },
 
       setStep: (step) => set({ currentStep: step }),

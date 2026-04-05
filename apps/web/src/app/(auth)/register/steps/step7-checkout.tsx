@@ -32,7 +32,6 @@ export function Step7Checkout() {
     }
   };
 
-  const planPrice = formData.planId === 'ESSENTIAL' ? '197' : formData.planId === 'ENTERPRISE' ? '997' : '497';
 
   return (
     <form onSubmit={handleFinish} className="animate-in fade-in grid grid-cols-1 lg:grid-cols-12 gap-12">
@@ -98,10 +97,10 @@ export function Step7Checkout() {
         <div className="bg-[#191c1e] text-white p-8 rounded-2xl shadow-xl relative overflow-hidden sticky top-32">
           <div className="absolute top-0 right-0 w-32 h-32 bg-[#ffd700]/10 rounded-bl-full blur-xl"></div>
           <h3 className="text-xs font-bold text-[#ffd700] uppercase tracking-widest mb-2">Resumo</h3>
-          <p className="text-2xl font-['Manrope'] font-bold mb-8">Plano {formData.planId?.toUpperCase() || 'PRO'}</p>
+          <p className="text-2xl font-['Manrope'] font-bold mb-8 uppercase">Plano {formData.selectedPlan?.name || 'Não selecionado'}</p>
           <div className="flex justify-between border-t border-white/10 pt-6">
             <span className="text-sm text-[#a0aabf]">Total a Pagar</span>
-            <span className="text-2xl font-bold text-[#ffd700]">R$ {planPrice}/mês</span>
+            <span className="text-2xl font-bold text-[#ffd700]">R$ {((formData.selectedPlan?.price_cents || 0) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/mês</span>
           </div>
         </div>
       </div>

@@ -12,6 +12,7 @@ import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
 import { projectsApi } from '@/lib/api/projects'
+import { FormattedDate } from '@/components/ui/formatted-date'
 
 const statusIcon: Record<string, React.ReactNode> = {
   'APPROVED': <CheckCircle className="w-4 h-4 text-emerald-500" />,
@@ -88,7 +89,7 @@ export default function ProjectDetailPage() {
           <div><p className="text-muted-foreground">Engenharia</p><p className="font-semibold text-purple-700">{project.engineering?.name || 'Não atribuído'}</p></div>
           <div><p className="text-muted-foreground">Revendedor</p><p className="font-semibold">{project.reseller?.name || 'Venda Direta'}</p></div>
           <div><p className="text-muted-foreground">Criado por</p><p className="font-semibold">{project.created_by_user?.name || 'Sistema'}</p></div>
-          <div><p className="text-muted-foreground">Prazo</p><p className="font-semibold">{project.deadline ? new Date(project.deadline).toLocaleDateString('pt-BR') : 'Sem prazo'}</p></div>
+          <div><p className="text-muted-foreground">Prazo</p><p className="font-semibold"><FormattedDate date={project.deadline} fallback="Sem prazo" /></p></div>
           <div><p className="text-muted-foreground">Tipo de Usina</p><p className="font-semibold">{project.type || 'Residencial'}</p></div>
         </CardContent>
       </Card>

@@ -56,5 +56,37 @@ export const projectsApi = {
     });
     if (!response.ok) throw new Error('Erro ao atualizar status do checklist');
     return await response.json();
+  },
+
+  /**
+   * Listar projetos que foram recebidos de uma integradora (Visão Engenheiro).
+   */
+  async listReceived(filters?: { status?: string; search?: string }) {
+    const url = new URL(`${API_URL}/projects/received`);
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value) url.searchParams.append(key, value);
+      });
+    }
+    const response = await fetch(url.toString());
+    if (!response.ok) throw new Error('Não foi possível carregar os projetos recebidos');
+    return await response.json();
+  },
+
+  /**
+   * Delegar um projeto para uma empresa de engenharia.
+   */
+  async delegate(projectId: string, engineeringTenantId: string) {
+    const response = await fetch(`${API_URL}/projects/${projectId}/delegate`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ delegatedTenantId: engineeringTenantId }),
+    });
+    if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.message || 'Erro ao delegar projeto');
+    }
+    return await response.json();
   }
 };
+

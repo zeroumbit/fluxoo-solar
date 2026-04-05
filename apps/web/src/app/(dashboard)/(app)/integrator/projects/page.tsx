@@ -20,7 +20,8 @@ import { Search, Plus, Eye, ArrowUpRight, MessageSquare, ChevronLeft, ChevronRig
 import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
 import { projectsApi } from '@/lib/api/projects'
-import { toast } from '@/hooks/use-toast'
+import { useToast } from '@/hooks/use-toast'
+import { FormattedDate } from '@/components/ui/formatted-date'
 
 interface Project {
   id: string
@@ -48,6 +49,7 @@ const statusLabelMap: Record<string, string> = {
 }
 
 export default function ProjectsPage() {
+  const { toast } = useToast()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [resellerFilter, setResellerFilter] = useState('all')
@@ -140,7 +142,7 @@ export default function ProjectsPage() {
                     </Badge>
                   </TableCell>
                   <TableCell className="hidden md:table-cell text-muted-foreground">{p.reseller?.name || 'Venda Direta'}</TableCell>
-                  <TableCell className="hidden md:table-cell text-muted-foreground">{new Date(p.created_at).toLocaleDateString('pt-BR')}</TableCell>
+                  <TableCell className="hidden md:table-cell text-muted-foreground"><FormattedDate date={p.created_at} /></TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">
                       <Button variant="ghost" size="sm" asChild title="Ver detalhes">

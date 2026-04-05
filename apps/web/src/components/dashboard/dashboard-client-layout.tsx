@@ -27,6 +27,17 @@ export function DashboardClientLayout({
 }) {
   const device = useDeviceType();
   const pathname = usePathname();
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Se ainda não montou, renderiza um esqueleto ou a versão desktop padrão
+  // Isso evita que o servidor mande Mobile e o cliente espere Desktop (ou vice-versa)
+  if (!mounted) {
+    return <div className="min-h-screen bg-slate-50/50" />;
+  }
 
   if (device === 'mobile') {
     return (

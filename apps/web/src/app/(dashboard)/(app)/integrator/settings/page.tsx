@@ -13,11 +13,12 @@ import {
 } from '@/components/ui/select'
 import { onboardingApi } from '@/lib/api/onboarding'
 import { Building2, MapPin, CreditCard, ShieldCheck, Save, Settings2, Search } from 'lucide-react'
-import { toast } from '@/hooks/use-toast'
+import { useToast } from '@/hooks/use-toast'
 
 const estados = ['AC','AL','AM','AP','BA','CE','DF','ES','GO','MA','MG','MS','MT','PA','PB','PE','PI','PR','RJ','RN','RO','RR','RS','SC','SE','SP','TO']
 
 export default function IntegratorSettingsPage() {
+  const { toast } = useToast()
   const [autoApproval, setAutoApproval] = useState(false)
   const [requireArt, setRequireArt] = useState(true)
   const [loadingCep, setLoadingCep] = useState(false)
